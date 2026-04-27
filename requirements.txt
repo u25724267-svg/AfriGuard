@@ -1,0 +1,10 @@
+# Runtime install for AfriGuard.
+#
+# This keeps pyproject.toml as the single source of truth for dependencies while
+# giving collaborators the familiar:
+#
+#   pip install -r requirements.txt
+#
+# It also installs the local package in editable mode so the `afriguard` CLI is
+# available immediately.
+-e .

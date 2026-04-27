@@ -22,7 +22,10 @@ Methodologically inspired by [PKU-SafeRLHF](https://github.com/PKU-Alignment/saf
 # 1. Clone and set up
 git clone <repo>
 cd AfriGuard
-pip install -e ".[dev]"
+pip install -r requirements.txt
+
+# For contributors running tests/linting:
+pip install -r requirements-dev.txt
 
 # 2. Configure
 cp .env.example .env
@@ -54,6 +57,22 @@ afriguard export --version 0.1.0
 # 10. Check API costs
 afriguard cost-report
 ```
+
+### Smoke Test
+
+Windows PowerShell:
+
+```powershell
+.\scripts\smoke-test.ps1 -Language shona
+```
+
+macOS/Linux:
+
+```bash
+bash scripts/smoke-test.sh shona
+```
+
+The smoke test installs dependencies, creates `.env` if needed, initializes the database, and runs a dry generation check without calling an LLM API.
 
 ## Pipeline Architecture
 

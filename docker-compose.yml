@@ -26,7 +26,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: ["afriguard", "bootstrap-db"]
+    command: ["bootstrap-db"]
 
   review-ui:
     build: .
@@ -42,7 +42,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: ["afriguard", "review-ui", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["review-ui", "--host", "0.0.0.0", "--port", "8000"]
 
 volumes:
   pgdata:

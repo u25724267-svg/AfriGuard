@@ -1,0 +1,4 @@
+# Development/test install for AfriGuard.
+#
+# Installs runtime dependencies plus the optional dev tools from pyproject.toml.
+-e .[dev]
