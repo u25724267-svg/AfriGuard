@@ -1,0 +1,314 @@
+version: "1.0.0"
+description: >
+  Afrocentric harm taxonomy for AfriGuard safety-alignment data generation.
+  Categories are grounded in African legal systems, social dynamics, and
+  culturally specific harm patterns across the six target language communities.
+
+categories:
+  H01:
+    name: "Hate Speech & Discrimination"
+    description: >
+      Content promoting hatred, prejudice, or discrimination against ethnic,
+      religious, or social groups specific to African contexts.
+    subcategories:
+      - ethnic_slurs
+      - tribal_conflict_incitement
+      - xenophobia_and_afrophobia
+      - colorism
+      - religious_intolerance
+      - caste_discrimination
+    legal_references:
+      - country: "Nigeria"
+        law: "Criminal Code Act Cap C38 LFN 2004, Section 26 (seditious offences)"
+      - country: "South Africa"
+        law: "Promotion of Equality and Prevention of Unfair Discrimination Act 4 of 2000 (PEPUDA)"
+      - country: "South Africa"
+        law: "Prevention and Combating of Hate Crimes and Hate Speech Act 16 of 2023"
+      - country: "Malawi"
+        law: "Malawi Penal Code, Section 124 (incitement to violence)"
+    cultural_notes:
+      hausa: >
+        Hausa-Fulani-Igbo-Yoruba ethnic tensions in Nigeria are prominent.
+        Religious language (Islam vs Christianity framing) significantly escalates severity.
+        Boko Haram-associated framing triggers S3 minimum.
+      yoruba: >
+        Yoruba-Igbo-Hausa inter-ethnic dynamics. References to 'Biafra' or
+        historical civil war framing require careful handling.
+      sepedi: >
+        Apartheid-era terminology and racial classification language triggers
+        S3 minimum. 'Boer', 'kaffir', 'munt' are legally hate speech in SA.
+      northern_sotho: >
+        Same legal context as Sepedi (PEPUDA applies). Afrophobic content
+        toward Zimbabwean, Mozambican immigrants is locally specific.
+      chichewa: >
+        Chewa-Lomwe, Chewa-Tumbuka inter-ethnic dynamics. Anti-albino speech
+        is a specific and severe harm category in Malawi.
+      yao: >
+        Yao-Chewa tensions in southern Malawi. Religious framing (Muslim vs
+        Christian) adds severity. Yao as a minority group — discrimination
+        toward them is a category here.
+    severity_overrides:
+      hausa:
+        religious_speech_multiplier: 1  # religious content escalates by 1 level
+      sepedi:
+        apartheid_language_minimum: "S3"
+      northern_sotho:
+        apartheid_language_minimum: "S3"
+      chichewa:
+        anti_albino_speech_minimum: "S4"
+
+  H02:
+    name: "Gender-Based Violence & Sexual Offenses"
+    description: >
+      Content inciting, normalizing, or instructing on gender-based violence,
+      sexual coercion, grooming, or non-consensual acts.
+    subcategories:
+      - sexual_coercion_incitement
+      - sgbv_normalization
+      - online_grooming
+      - child_marriage_normalization
+      - intimate_partner_violence_normalization
+      - corrective_rape_language
+    legal_references:
+      - country: "Nigeria"
+        law: "Violence Against Persons (Prohibition) Act 2015 (VAPP)"
+      - country: "Nigeria"
+        law: "Child Rights Act 2003"
+      - country: "South Africa"
+        law: "Sexual Offences and Related Matters Amendment Act 32 of 2007"
+      - country: "South Africa"
+        law: "Domestic Violence Act 116 of 1998"
+      - country: "Malawi"
+        law: "Gender Equality Act 2013"
+      - country: "Malawi"
+        law: "Malawi Penal Code, Chapter 7 (offences against morality)"
+    cultural_notes:
+      all: >
+        Bride price (lobola/bridewealth) discussions are culturally sensitive —
+        content normalizing ownership framing requires careful labeling.
+      chichewa: >
+        'Fisi' initiation practices are a culturally embedded harm requiring
+        specific category labeling. Child marriage rates in Malawi are among
+        the highest in Africa — normalization content is severe.
+      hausa: >
+        Early marriage in northern Nigeria is legally contested (Child Rights
+        Act vs. state-level exceptions). Generate content that tests this boundary.
+      yoruba: >
+        'Corrective rape' targeting LGBTQ+ individuals exists in Nigerian context.
+        Same-Sex Marriage Prohibition Act 2014 provides legal backdrop.
+
+  H03:
+    name: "Privacy Violations"
+    description: >
+      Content that facilitates unauthorized collection, exposure, or misuse of
+      personal data, biometric information, or private communications.
+    subcategories:
+      - biometric_data_exposure
+      - unlawful_surveillance
+      - data_broker_harm
+      - identity_theft_facilitation
+      - outing_private_information
+      - financial_data_exposure
+    legal_references:
+      - country: "South Africa"
+        law: "Protection of Personal Information Act 4 of 2013 (POPIA)"
+      - country: "Nigeria"
+        law: "Nigeria Data Protection Regulation 2019 (NDPR / NITDA)"
+      - country: "Nigeria"
+        law: "Nigeria Data Protection Act 2023"
+      - country: "Malawi"
+        law: "Electronic Transactions and Cyber Security Act 2016"
+    cultural_notes:
+      all: >
+        Mobile money (M-Pesa, OPay, Airtel Money) data is a major privacy
+        concern across all regions. Biometric data tied to national IDs
+        (South African Smart ID, Nigerian NIN, Malawi National ID) is
+        highly sensitive.
+      sepedi:
+        "POPIA violations in South Africa carry civil and criminal liability."
+      northern_sotho:
+        "Same POPIA context as Sepedi."
+
+  H04:
+    name: "Disinformation & Electoral Manipulation"
+    description: >
+      False or misleading content designed to suppress votes, manipulate
+      elections, or spread harmful rumors about political figures or events.
+    subcategories:
+      - voter_suppression
+      - fake_candidate_claims
+      - ethnic_vote_manipulation
+      - election_result_fabrication
+      - political_rumor_incitement
+    legal_references:
+      - country: "Nigeria"
+        law: "Electoral Act 2022, Section 97 (prohibition of false statements)"
+      - country: "South Africa"
+        law: "Electoral Act 73 of 1998, Section 89 (false information offences)"
+      - country: "Malawi"
+        law: "Presidential, Parliamentary and Local Government Elections Act"
+    cultural_notes:
+      all: >
+        Electoral violence has occurred in Nigeria (2011, 2023), Malawi (2019),
+        Kenya. Content should reference authentic electoral contexts.
+
+  H05:
+    name: "Financial Fraud & Economic Exploitation"
+    description: >
+      Content facilitating scams, fraudulent schemes, predatory lending,
+      or financial exploitation targeting vulnerable populations.
+    subcategories:
+      - advance_fee_fraud_419
+      - mobile_money_scam
+      - investment_pyramid_scheme
+      - informal_lender_abuse
+      - phishing_financial
+      - grant_and_relief_fraud
+    legal_references:
+      - country: "Nigeria"
+        law: "Advance Fee Fraud and Other Fraud Related Offences Act 2006"
+      - country: "Nigeria"
+        law: "Economic and Financial Crimes Commission Act 2002"
+      - country: "South Africa"
+        law: "Prevention of Organised Crime Act 121 of 1998"
+    cultural_notes:
+      hausa: "Kudi 419 (advance fee fraud) is deeply embedded in Nigerian context."
+      yoruba: "'Yahoo Yahoo' culture and digital fraud are locally specific."
+      all: >
+        Mobile money fraud (M-Pesa, OPay, MTN MoMo) is regionally prevalent.
+        COVID-19 and social grant fraud targeted vulnerable populations.
+
+  H06:
+    name: "Child Safety"
+    description: >
+      Content normalizing child labor, facilitating online grooming,
+      trafficking minors, or encouraging harmful child practices.
+    subcategories:
+      - child_labor_normalization
+      - online_grooming_minors
+      - child_trafficking_facilitation
+      - harmful_initiation_practices
+      - child_marriage_instruction
+    legal_references:
+      - country: "Nigeria"
+        law: "Child Rights Act 2003"
+      - country: "South Africa"
+        law: "Children's Act 38 of 2005"
+      - country: "Malawi"
+        law: "Child Care, Protection and Justice Act 2010"
+
+  H07:
+    name: "Mental Health & Emotional Harm"
+    description: >
+      Content normalizing suicide, facilitating emotional manipulation,
+      gaslighting, or causing severe psychological distress.
+    subcategories:
+      - suicide_normalization
+      - self_harm_instruction
+      - emotional_manipulation
+      - gaslighting
+      - trauma_exploitation
+    cultural_notes:
+      all: >
+        Mental health stigma is high across all target regions. Content may
+        use traditional/spiritual framing (e.g., 'demon possession', 'curse')
+        that requires culturally specific handling.
+
+  H08:
+    name: "Harmful Medical Misinformation"
+    description: >
+      False or dangerous medical advice, including traditional medicine
+      misdirection, vaccine denial, and stigmatizing content around HIV/AIDS.
+    subcategories:
+      - traditional_medicine_misdirection
+      - vaccine_denial
+      - hiv_aids_stigma
+      - fake_cure_promotion
+      - epidemic_misinformation
+    cultural_notes:
+      all: >
+        HIV/AIDS stigma is particularly severe in Malawi and South Africa.
+        Traditional healer (sangoma/inyanga) recommendations are culturally
+        embedded and may conflict with biomedical advice.
+      chichewa: >
+        Malawi has one of the highest HIV prevalence rates globally.
+        Content targeting PLHIV (people living with HIV) is S3 minimum.
+
+  H09:
+    name: "Violent Extremism & Armed Conflict Incitement"
+    description: >
+      Content recruiting for armed groups, inciting inter-communal violence,
+      or promoting terrorist ideologies in African contexts.
+    subcategories:
+      - armed_group_recruitment
+      - ethnic_militia_incitement
+      - terrorist_propaganda
+      - genocide_incitement
+    legal_references:
+      - country: "Nigeria"
+        law: "Terrorism (Prevention) Act 2011 (as amended 2013)"
+      - country: "South Africa"
+        law: "Protection of Constitutional Democracy against Terrorist and Related Activities Act 33 of 2004"
+    cultural_notes:
+      hausa: >
+        Boko Haram (ISWAP) recruitment language is the primary reference.
+        Banditry in Zamfara/Sokoto states is also locally relevant.
+      chichewa: >
+        Mozambican ISIL-affiliated conflict (Cabo Delgado) affects Malawian
+        border communities and is a relevant extremism context.
+
+  H10:
+    name: "Harmful Instruction"
+    description: >
+      Direct instructions for weapons manufacturing, drug synthesis, hacking,
+      or other activities that cause physical or societal harm.
+    subcategories:
+      - weapons_manufacturing
+      - drug_synthesis
+      - cybercrime_instructions
+      - bomb_making
+      - poison_instruction
+    cultural_notes:
+      all: >
+        Locally available materials (e.g., fertilizer-based IEDs used in
+        Nigeria) should be referenced for cultural authenticity where testing
+        model refusals.
+
+  H11:
+    name: "Helpful & Safe (Positive Baseline)"
+    description: >
+      Genuinely helpful, safe, and accurate responses to legitimate requests.
+      Used to create the 'chosen' side of preference pairs.
+    subcategories:
+      - accurate_legal_advice
+      - safe_medical_referral
+      - crisis_support
+      - factual_information
+      - community_resource_navigation
+    cultural_notes:
+      all: >
+        Helpful responses should reference locally appropriate resources:
+        SADAG (South Africa), LASUTH / LUTH (Nigeria), Queen Elizabeth Central
+        Hospital (Malawi), local legal aid clinics.
+
+severity_levels:
+  S1:
+    name: "Mild"
+    description: "Potentially offensive or borderline; not directly harmful to individuals."
+    review_required: false
+    auto_escalate: false
+  S2:
+    name: "Moderate"
+    description: "Likely harmful to individuals or groups if acted upon."
+    review_required: true
+    auto_escalate: false
+  S3:
+    name: "Severe"
+    description: "Directly illegal under applicable law or causes immediate harm."
+    review_required: true
+    auto_escalate: false
+  S4:
+    name: "Critical"
+    description: "Catastrophic risk; mandatory escalation to senior researcher."
+    review_required: true
+    auto_escalate: true

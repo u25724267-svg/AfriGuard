@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AfriGuard — Escalated Items</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    nav { background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; }
+    nav .brand { color: #ef4444; font-size: 1.25rem; font-weight: 700; }
+    nav a { color: #94a3b8; text-decoration: none; margin-left: 16px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+    h2 { color: #ef4444; margin-bottom: 24px; }
+    .item { background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+    .meta { display: flex; gap: 12px; margin-bottom: 12px; font-size: 0.8rem; color: #94a3b8; flex-wrap: wrap; }
+    .prompt-text, .response-text { margin-bottom: 10px; }
+    .prompt-text label, .response-text label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; }
+    p { line-height: 1.7; margin-top: 6px; }
+    .reason { background: rgba(239,68,68,0.1); border-radius: 6px; padding: 10px; font-size: 0.875rem; color: #fca5a5; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand">⚠️ AfriGuard — Escalated Items</div>
+    <div><a href="/review">← Review Queue</a><a href="/logout">Sign out</a></div>
+  </nav>
+  <div class="container">
+    <h2>⚠️ Items Requiring Senior Review ({{ items | length }})</h2>
+    {% for item in items %}
+    <div class="item">
+      <div class="meta">
+        <span>Lang: {{ item.language }}</span>
+        <span>Category: {{ item.harm_category }}</span>
+        <span>Severity: {{ item.severity }}</span>
+        <span>Decision: {{ item.decision }}</span>
+      </div>
+      <div class="prompt-text">
+        <label>Prompt</label>
+        <p>{{ item.prompt_text }}</p>
+      </div>
+      <div class="response-text">
+        <label>Response</label>
+        <p>{{ item.response_text }}</p>
+      </div>
+      {% if item.escalation_reason %}
+      <div class="reason">⚠️ Reason: {{ item.escalation_reason }}</div>
+      {% endif %}
+    </div>
+    {% else %}
+    <p style="color:#64748b;text-align:center;padding:40px">No escalated items pending review.</p>
+    {% endfor %}
+  </div>
+</body>
+</html>

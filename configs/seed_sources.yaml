@@ -1,0 +1,146 @@
+version: "1.0.0"
+description: >
+  Afrocentric seed dataset registry. Each entry defines a dataset to ingest,
+  its source, target languages, primary harm domains, and license.
+
+sources:
+  - id: "afrisenti"
+    name: "AfriSenti"
+    description: "Twitter sentiment dataset for African languages including hate speech signals"
+    type: "huggingface"
+    hf_path: "shmuhammad/AfriSenti-twitter-sentiment"
+    hf_split: "train"
+    languages: ["hausa", "yoruba"]
+    harm_domains: ["H01", "H07"]
+    text_column: "tweet"
+    license: "CC BY 4.0"
+    notes: "Primary hate speech and sentiment seed for Hausa and Yoruba"
+
+  - id: "masakhaner2"
+    name: "MasakhaNER 2.0"
+    description: "Named entity recognition dataset for African languages — used for cultural entity injection"
+    type: "huggingface"
+    hf_path: "masakhane/masakhaner2"
+    hf_split: "train"
+    languages: ["hausa", "yoruba"]
+    harm_domains: ["entities"]
+    text_column: "tokens"
+    is_token_list: true
+    license: "CC BY 4.0"
+    notes: "Provides authentic names, locations, organisations for prompt grounding"
+
+  - id: "masakhanews"
+    name: "MasakhaNEWS"
+    description: "African news classification dataset — provides real-world news context"
+    type: "huggingface"
+    hf_path: "masakhane/masakhanews"
+    hf_split: "train"
+    languages: ["hausa", "yoruba"]
+    harm_domains: ["H04", "H09", "context"]
+    text_column: "text"
+    license: "CC BY 4.0"
+    notes: "News context seeds for disinformation and extremism categories"
+
+  - id: "naijasenti"
+    name: "NaijaSenti"
+    description: "Nigerian Twitter sentiment including Hausa, Yoruba, Igbo, Pidgin"
+    type: "huggingface"
+    hf_path: "HausaNLP/NaijaSenti"
+    hf_split: "train"
+    languages: ["hausa", "yoruba"]
+    harm_domains: ["H01", "H07"]
+    text_column: "tweet"
+    license: "CC BY 4.0"
+    notes: "Good source of naturally occurring hate-adjacent language patterns"
+
+  - id: "africahatesentiment"
+    name: "Africa Hate Speech (Twitter)"
+    description: "Hate speech dataset for African social media"
+    type: "huggingface"
+    hf_path: "strombergnlp/broad_twitter_corpus"
+    hf_split: "train"
+    languages: ["hausa", "yoruba", "sepedi", "northern_sotho"]
+    harm_domains: ["H01"]
+    text_column: "text"
+    license: "CC BY 4.0"
+    notes: "Supplementary hate speech seeds"
+
+  - id: "south_africa_legal_popia"
+    name: "POPIA Full Text (South Africa)"
+    description: "Protection of Personal Information Act — full text used as legal conditioning"
+    type: "local"
+    local_path: "data/seeds/legal/popia_2013.txt"
+    fallback_url: "https://www.gov.za/sites/default/files/gcis_document/201409/3706726-11act4of2013protectionofpersonalinforcorrect.pdf"
+    languages: ["sepedi", "northern_sotho"]
+    harm_domains: ["H03"]
+    text_column: "text"
+    license: "Government publication (public domain)"
+    notes: "Used as legal_context for H03 prompts in South African language variants"
+
+  - id: "nigeria_vapp_act"
+    name: "Nigeria Violence Against Persons Prohibition Act 2015"
+    description: "VAPP Act text — legal grounding for GBV prompts"
+    type: "local"
+    local_path: "data/seeds/legal/nigeria_vapp_2015.txt"
+    fallback_url: "https://placng.org/i/wp-content/uploads/2019/12/Violence-Against-Persons-Prohibition-Act-2015.pdf"
+    languages: ["hausa", "yoruba"]
+    harm_domains: ["H02"]
+    text_column: "text"
+    license: "Government publication (public domain)"
+    notes: "Legal conditioning for H02 Hausa and Yoruba generation"
+
+  - id: "malawi_gender_equality_act"
+    name: "Malawi Gender Equality Act 2013"
+    description: "Gender equality and GBV legal text for Malawi"
+    type: "local"
+    local_path: "data/seeds/legal/malawi_gender_equality_2013.txt"
+    fallback_url: "https://www.sdnp.org.mw/index.php/resources/documents/legislation/gender/94-malawi-gender-equality-act/file"
+    languages: ["chichewa", "yao"]
+    harm_domains: ["H02", "H06"]
+    text_column: "text"
+    license: "Government publication (public domain)"
+
+  - id: "sa_sexual_offences_act"
+    name: "South Africa Sexual Offences and Related Matters Amendment Act 32 of 2007"
+    description: "Sexual offences legal text for South African context"
+    type: "local"
+    local_path: "data/seeds/legal/sa_sexual_offences_2007.txt"
+    fallback_url: ""
+    languages: ["sepedi", "northern_sotho"]
+    harm_domains: ["H02"]
+    text_column: "text"
+    license: "Government publication (public domain)"
+
+  - id: "yoruba_news_corpus"
+    name: "Yorùbá News Corpus"
+    description: "Yoruba news text for cultural context seeding"
+    type: "huggingface"
+    hf_path: "castorini/yoruba_news"
+    hf_split: "train"
+    languages: ["yoruba"]
+    harm_domains: ["H04", "context"]
+    text_column: "article"
+    license: "CC BY 4.0"
+
+  - id: "hausa_voa"
+    name: "Hausa VOA News"
+    description: "Hausa Voice of America news articles for cultural context"
+    type: "huggingface"
+    hf_path: "HausaNLP/HausaVOA-NER"
+    hf_split: "train"
+    languages: ["hausa"]
+    harm_domains: ["H04", "H09", "context"]
+    text_column: "tokens"
+    is_token_list: true
+    license: "CC BY 4.0"
+
+  - id: "custom_afriguard_lexicon"
+    name: "AfriGuard Cultural Lexicon"
+    description: "Hand-curated list of culturally authentic names, places, and expressions per language"
+    type: "local"
+    local_path: "data/seeds/custom/afriguard_lexicon.json"
+    languages: ["hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba"]
+    harm_domains: ["entities"]
+    text_column: "name"
+    license: "AfriGuard (MIT)"
+    notes: "Created by research team. Used for entity injection in all prompts."

@@ -1,0 +1,42 @@
+stages:
+  ingest:
+    cmd: afriguard ingest-seeds --max-samples 500
+    deps:
+      - configs/seed_sources.yaml
+      - src/ingestion/
+    outs:
+      - data/seeds/:
+          persist: true
+
+  generate:
+    cmd: afriguard generate --n-prompts 5
+    deps:
+      - configs/pipeline.yaml
+      - configs/harm_taxonomy.yaml
+      - configs/models.yaml
+      - configs/prompt_templates/
+      - data/seeds/
+      - src/generation/
+      - src/prompt_construction/
+      - src/taxonomy/
+    outs:
+      - data/candidates/:
+          persist: true
+
+  filter:
+    cmd: afriguard filter
+    deps:
+      - data/candidates/
+      - src/filtering/
+    outs:
+      - data/filtered/:
+          persist: true
+
+  assemble:
+    cmd: afriguard assemble --version 0.1.0
+    deps:
+      - data/filtered/
+      - src/assembly/
+    outs:
+      - data/releases/:
+          persist: true

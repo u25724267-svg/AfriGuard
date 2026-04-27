@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AfriGuard — Review Queue</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    nav {
+      background: rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 14px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    nav .brand { color: #38bdf8; font-size: 1.25rem; font-weight: 700; }
+    nav .meta { color: #94a3b8; font-size: 0.875rem; }
+    nav a { color: #94a3b8; text-decoration: none; margin-left: 16px; }
+    nav a:hover { color: #38bdf8; }
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+    .stats-bar {
+      display: flex; gap: 16px; margin-bottom: 32px;
+    }
+    .stat-card {
+      flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 16px 20px;
+    }
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: #38bdf8; }
+    .stat-card .label { font-size: 0.8rem; color: #94a3b8; margin-top: 4px; }
+    .task-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    .task-header {
+      background: rgba(56, 189, 248, 0.1);
+      border-bottom: 1px solid rgba(56,189,248,0.2);
+      padding: 16px 24px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex; align-items: center; padding: 3px 10px;
+      border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+    }
+    .badge-lang { background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+    .badge-harm { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+    .badge-s1 { background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.2); }
+    .badge-s2 { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.2); }
+    .badge-s3 { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+    .badge-s4 { background: rgba(127,29,29,0.4); color: #fca5a5; border: 1px solid rgba(239,68,68,0.5); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+    .prompt-text {
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .prompt-text label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+    .prompt-text p { margin-top: 8px; line-height: 1.7; color: #f1f5f9; font-size: 0.95rem; }
+    .candidates { padding: 16px 24px; }
+    .candidates h3 { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+    .candidate {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .candidate-meta { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .candidate-text { color: #cbd5e1; line-height: 1.7; font-size: 0.9rem; margin-bottom: 12px; }
+    .form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 0.75rem; color: #64748b; }
+    select.sm, input.sm {
+      padding: 7px 10px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06); color: #e2e8f0;
+      font-size: 0.875rem; outline: none;
+    }
+    select.sm option { background: #1e293b; }
+    input.rank { width: 60px; }
+    textarea.note {
+      width: 100%; padding: 8px 10px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06); color: #e2e8f0;
+      font-size: 0.875rem; resize: vertical; min-height: 60px; margin-top: 8px;
+    }
+    .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 0.875rem; transition: all 0.2s; }
+    .btn-approve { background: rgba(16,185,129,0.2); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+    .btn-approve:hover { background: rgba(16,185,129,0.35); }
+    .btn-reject { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+    .btn-reject:hover { background: rgba(239,68,68,0.3); }
+    .btn-flag { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
+    .btn-escalate { background: rgba(127,29,29,0.3); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .empty { text-align: center; padding: 80px 20px; color: #475569; }
+    .empty .icon { font-size: 3rem; margin-bottom: 16px; }
+    .quality-bar { height: 4px; border-radius: 2px; background: #1e293b; margin-bottom: 8px; }
+    .quality-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981); }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand">🛡️ AfriGuard Review</div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span class="meta">{{ reviewer_id }}</span>
+      <a href="/stats">📊 Stats</a>
+      <a href="/logout">Sign out</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="value">{{ annotated_count }}</div>
+        <div class="label">Annotations completed</div>
+      </div>
+      <div class="stat-card">
+        <div class="value">{{ pending_count }}</div>
+        <div class="label">Tasks in queue</div>
+      </div>
+    </div>
+
+    {% if not tasks %}
+    <div class="empty">
+      <div class="icon">✅</div>
+      <h2>All caught up!</h2>
+      <p>No pending review tasks for your language. Check back after the next generation run.</p>
+    </div>
+    {% endif %}
+
+    {% for task in tasks %}
+    <div class="task-card">
+      <div class="task-header">
+        <span class="badge badge-lang">{{ task.language }}</span>
+        <span class="badge badge-harm">{{ task.harm_category }}</span>
+        <span class="badge badge-{{ task.severity | lower }}">{{ task.severity }}</span>
+        <span style="color:#64748b;font-size:0.8rem;margin-left:auto">ID: {{ task.prompt_id[:8] }}</span>
+      </div>
+
+      <div class="prompt-text">
+        <label>User Prompt ({{ task.language }})</label>
+        <p>{{ task.prompt_text }}</p>
+      </div>
+
+      <div class="candidates">
+        <h3>Candidate Responses — select decision for each</h3>
+
+        {% for cand in task.candidates %}
+        <div class="candidate">
+          <div class="candidate-meta">
+            <span class="badge" style="background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.2)">
+              {{ cand.response_type | upper }}
+            </span>
+            <span style="font-size:0.75rem;color:#64748b">
+              Quality: {{ "%.0f"|format((cand.quality_score or 0) * 100) }}%
+            </span>
+          </div>
+          <div class="quality-bar">
+            <div class="quality-fill" style="width: {{ ((cand.quality_score or 0) * 100) | int }}%"></div>
+          </div>
+          <div class="candidate-text">{{ cand.response_text }}</div>
+
+          <form method="POST" action="/annotate">
+            <input type="hidden" name="prompt_id" value="{{ task.prompt_id }}">
+            <input type="hidden" name="candidate_id" value="{{ cand.id }}">
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Decision</label>
+                <select name="decision" class="sm" required>
+                  <option value="approve">✅ Approve</option>
+                  <option value="reject">❌ Reject</option>
+                  <option value="flag">🚩 Flag</option>
+                  <option value="escalate">⚠️ Escalate</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Harm label</label>
+                <select name="harm_label" class="sm">
+                  <option value="">— Same as tagged —</option>
+                  <option value="H01">H01 Hate Speech</option>
+                  <option value="H02">H02 GBV</option>
+                  <option value="H03">H03 Privacy</option>
+                  <option value="H04">H04 Disinfo</option>
+                  <option value="H05">H05 Fraud</option>
+                  <option value="H06">H06 Child Safety</option>
+                  <option value="H07">H07 Mental Health</option>
+                  <option value="H08">H08 Medical Misinfo</option>
+                  <option value="H09">H09 Extremism</option>
+                  <option value="H10">H10 Harmful Instruction</option>
+                  <option value="H11">H11 Helpful</option>
+                  <option value="not_harmful">Not harmful</option>
+                  <option value="unclear">Unclear</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Severity</label>
+                <select name="severity_label" class="sm">
+                  <option value="">— Same —</option>
+                  <option value="S1">S1 Mild</option>
+                  <option value="S2">S2 Moderate</option>
+                  <option value="S3">S3 Severe</option>
+                  <option value="S4">S4 Critical</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Rank (1=best)</label>
+                <input type="number" name="preference_rank" class="sm rank" min="1" max="10" placeholder="1">
+              </div>
+            </div>
+
+            <textarea class="note" name="notes" placeholder="Optional notes or corrections (in {{ task.language }} or English)…"></textarea>
+            <textarea class="note" name="suggested_edit" placeholder="Suggest an edited response (optional)…" style="margin-top:6px"></textarea>
+            <input type="hidden" name="escalate" value="false">
+
+            <div class="form-row" style="margin-top:10px;gap:8px">
+              <button type="submit" class="btn btn-approve" onclick="this.form.decision.value='approve'">✅ Approve</button>
+              <button type="submit" class="btn btn-reject" onclick="this.form.decision.value='reject'">❌ Reject</button>
+              <button type="submit" class="btn btn-flag" onclick="this.form.decision.value='flag'">🚩 Flag</button>
+              <button type="submit" class="btn btn-escalate" onclick="this.form.decision.value='escalate';this.form.escalate.value='true'">⚠️ Escalate</button>
+            </div>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</body>
+</html>

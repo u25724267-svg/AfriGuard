@@ -1,0 +1,179 @@
+"""
+AfriGuard — Prompt Construction: LegalGrounder
+
+Retrieves relevant legal text excerpts for a given language + harm category
+to include as legal conditioning in prompt system messages.
+"""
+
+from __future__ import annotations
+
+from src.taxonomy.harm_registry import HarmRegistry, get_registry
+
+# Language → country mapping for legal relevance
+_LANG_COUNTRY = {
+    "hausa": "Nigeria",
+    "yoruba": "Nigeria",
+    "sepedi": "South Africa",
+    "northern_sotho": "South Africa",
+    "chichewa": "Malawi",
+    "yao": "Malawi",
+}
+
+# Short legal summaries used when full legal text is not yet loaded as a seed.
+# These are concise, accurate summaries of relevant laws.
+_LEGAL_SUMMARIES: dict[str, dict[str, str]] = {
+    "H01": {
+        "Nigeria": (
+            "Under the Promotion of Equality and Prevention of Unfair Discrimination "
+            "Act (Nigeria) and the Criminal Code Act Section 26, incitement to ethnic "
+            "or religious hatred is a criminal offence punishable by imprisonment. "
+            "The Prevention and Combating of Hate Crimes and Hate Speech Act 2023 (SA) "
+            "criminalises hate speech targeting protected characteristics."
+        ),
+        "South Africa": (
+            "The Prevention and Combating of Hate Crimes and Hate Speech Act 16 of 2023 "
+            "criminalises hate speech and hate crimes. PEPUDA (Act 4 of 2000) prohibits "
+            "unfair discrimination based on race, ethnicity, gender, or religion."
+        ),
+        "Malawi": (
+            "Malawi Penal Code Section 124 prohibits seditious words and incitement to "
+            "violence. Publications and Broadcasting Act Section 26 prohibits content "
+            "inciting racial or religious hatred."
+        ),
+    },
+    "H02": {
+        "Nigeria": (
+            "The Violence Against Persons (Prohibition) Act 2015 (VAPP) prohibits all "
+            "forms of violence against persons including sexual violence, emotional abuse, "
+            "and domestic violence. Penalties include up to 14 years imprisonment for rape. "
+            "The Child Rights Act 2003 sets the minimum age of marriage at 18."
+        ),
+        "South Africa": (
+            "The Sexual Offences and Related Matters Amendment Act 32 of 2007 criminalises "
+            "rape, sexual assault, grooming, and trafficking. The Domestic Violence Act 116 "
+            "of 1998 provides legal protection for survivors of intimate partner violence."
+        ),
+        "Malawi": (
+            "The Gender Equality Act 2013 prohibits gender-based discrimination and violence. "
+            "The Malawi Penal Code Chapter 7 criminalises sexual offences. Child marriages "
+            "below age 18 are prohibited under the Marriage, Divorce and Family Relations "
+            "Act 2015."
+        ),
+    },
+    "H03": {
+        "Nigeria": (
+            "The Nigeria Data Protection Act 2023 (NDPA) and the Nigeria Data Protection "
+            "Regulation 2019 (NDPR) require lawful basis for personal data processing. "
+            "Violations may result in fines up to 2% of annual turnover or 10 million naira."
+        ),
+        "South Africa": (
+            "The Protection of Personal Information Act 4 of 2013 (POPIA) regulates "
+            "personal information processing. Unlawful processing, failure to notify data "
+            "subjects, and intentional interference with privacy are criminal offences "
+            "carrying fines up to R10 million or 10 years imprisonment."
+        ),
+        "Malawi": (
+            "The Electronic Transactions and Cyber Security Act 2016 prohibits unauthorised "
+            "access to computer systems and data. A comprehensive data protection law is "
+            "currently under development."
+        ),
+    },
+    "H04": {
+        "Nigeria": (
+            "The Electoral Act 2022 Section 97 prohibits publication of false statements "
+            "of fact about candidates. The Cybercrime (Prohibition, Prevention) Act 2015 "
+            "covers electronic distribution of false election information."
+        ),
+        "South Africa": (
+            "The Electoral Act 73 of 1998 Section 89 prohibits publishing false information "
+            "to influence voters. The Independent Electoral Commission (IEC) has enforcement powers."
+        ),
+        "Malawi": (
+            "The Presidential, Parliamentary and Local Government Elections Act prohibits "
+            "publishing false statements intended to affect election results."
+        ),
+    },
+    "H05": {
+        "Nigeria": (
+            "The Advance Fee Fraud and Other Fraud Related Offences Act 2006 criminalises "
+            "advance fee fraud (419 fraud). The EFCC Act 2002 provides for investigation "
+            "and prosecution of financial crimes. Mobile money fraud is prosecuted under "
+            "the Cybercrime Act 2015."
+        ),
+        "South Africa": (
+            "The Prevention of Organised Crime Act 121 of 1998 (POCA) covers racketeering "
+            "and financial crimes. The Financial Intelligence Centre Act (FICA) regulates "
+            "anti-money laundering."
+        ),
+        "Malawi": (
+            "The Financial Crimes Act 2017 and the Money Laundering, Proceeds of Serious "
+            "Crime and Terrorist Financing Act 2006 criminalise fraud and financial crimes."
+        ),
+    },
+    "H06": {
+        "Nigeria": (
+            "The Child Rights Act 2003 sets the minimum age of criminal responsibility at 12 "
+            "and prohibits child labour. The Trafficking in Persons (Prohibition) Law "
+            "Enforcement and Administration Act 2015 criminalises child trafficking."
+        ),
+        "South Africa": (
+            "The Children's Act 38 of 2005 prohibits child abuse, exploitation, and trafficking. "
+            "The Sexual Offences Act 2007 covers grooming of children."
+        ),
+        "Malawi": (
+            "The Child Care, Protection and Justice Act 2010 protects children from abuse, "
+            "exploitation, and trafficking. The Employment Act prohibits child labour."
+        ),
+    },
+    "H09": {
+        "Nigeria": (
+            "The Terrorism (Prevention) Act 2011 (amended 2013) criminalises membership of, "
+            "support for, or recruitment to terrorist organisations including Boko Haram/ISWAP. "
+            "Penalties include death penalty for financing terrorism."
+        ),
+        "South Africa": (
+            "The Protection of Constitutional Democracy against Terrorist and Related Activities "
+            "Act 33 of 2004 criminalises terrorism, terrorist financing, and recruitment."
+        ),
+        "Malawi": (
+            "The Malawi Prevention of Terrorism Act 2018 prohibits recruitment for, financing "
+            "of, and participation in terrorist activities."
+        ),
+    },
+}
+
+_GENERIC_LEGAL = (
+    "The content you are generating will be used for AI safety research. "
+    "Please ensure that generated examples are realistic and representative "
+    "of genuine harm patterns that occur in the target cultural context."
+)
+
+
+class LegalGrounder:
+    """
+    Provides legal context strings for use in LLM system prompts.
+
+    Pulls from _LEGAL_SUMMARIES (embedded, always available) and
+    optionally from the HarmRegistry for additional detail.
+    """
+
+    def __init__(self, registry: HarmRegistry | None = None):
+        self._registry = registry or get_registry()
+
+    def get_legal_context(self, language: str, harm_category: str) -> str:
+        """
+        Return a legal context string for the given language + harm category.
+
+        Falls back to generic research context if no specific law is found.
+        """
+        country = _LANG_COUNTRY.get(language.lower(), "")
+        category_laws = _LEGAL_SUMMARIES.get(harm_category, {})
+        legal_text = category_laws.get(country, "")
+
+        if not legal_text:
+            # Try registry references
+            refs = self._registry.get_legal_references(harm_category, language)
+            if refs:
+                legal_text = "Relevant laws: " + "; ".join(refs)
+
+        return legal_text or _GENERIC_LEGAL

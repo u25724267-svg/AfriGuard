@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: afriguard
+      POSTGRES_PASSWORD: afriguard_dev
+      POSTGRES_DB: afriguard
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U afriguard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pipeline:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://afriguard:afriguard_dev@db:5432/afriguard
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["afriguard", "bootstrap-db"]
+
+  review-ui:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://afriguard:afriguard_dev@db:5432/afriguard
+      REVIEW_UI_HOST: "0.0.0.0"
+      REVIEW_UI_PORT: "8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["afriguard", "review-ui", "--host", "0.0.0.0", "--port", "8000"]
+
+volumes:
+  pgdata:

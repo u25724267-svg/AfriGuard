@@ -1,0 +1,79 @@
+# Pipeline Configuration
+# All values can be overridden by environment variables.
+
+pipeline:
+  name: "afriguard"
+  version: "0.1.0"
+  poc_mode: true                     # limits generation to poc_max_items_per_language
+  poc_max_items_per_language: 100    # items per language in PoC mode
+  batch_size: 10                     # prompts processed per generation batch
+  candidates_per_prompt: 4           # candidate responses generated per prompt
+  default_model: "gpt-4o"
+  seed_sample_size: 5                # seed documents injected per prompt
+  similarity_threshold: 0.85         # cosine similarity above which candidates are dropped
+  min_quality_score: 0.60            # candidates below this score are filtered
+  min_response_length: 30            # characters
+  max_response_length: 2000          # characters
+
+languages:
+  - name: "hausa"
+    code: "ha"
+    iso_639_3: "hau"
+    region: "Nigeria / Niger / West Africa"
+    reviewer_id: "reviewer_hausa"    # maps to review UI login
+  - name: "sepedi"
+    code: "sep"
+    iso_639_3: "nso"
+    region: "South Africa (Limpopo)"
+    reviewer_id: "reviewer_sepedi"
+  - name: "chichewa"
+    code: "ny"
+    iso_639_3: "nya"
+    region: "Malawi / Zambia / Mozambique"
+    reviewer_id: "reviewer_chichewa"
+  - name: "northern_sotho"
+    code: "nso"
+    iso_639_3: "nso"
+    region: "South Africa (Limpopo)"
+    reviewer_id: "reviewer_northern_sotho"
+  - name: "yao"
+    code: "yao"
+    iso_639_3: "yao"
+    region: "Malawi / Tanzania / Mozambique"
+    reviewer_id: "reviewer_yao"
+  - name: "yoruba"
+    code: "yo"
+    iso_639_3: "yor"
+    region: "Nigeria / Benin / Togo"
+    reviewer_id: "reviewer_yoruba"
+
+# Which harm categories to generate in PoC (all 11 = full run)
+active_harm_categories:
+  - "H01"  # Hate Speech
+  - "H02"  # Gender-Based Violence
+  - "H03"  # Privacy Violations
+  - "H04"  # Disinformation
+  - "H05"  # Financial Fraud
+  - "H06"  # Child Safety
+  - "H07"  # Mental Health Harm
+  - "H08"  # Medical Misinformation
+  - "H09"  # Violent Extremism
+  - "H10"  # Harmful Instruction
+  - "H11"  # Helpful (positive baseline)
+
+# Target distribution across severity levels (as fractions, must sum to 1.0)
+severity_distribution:
+  S1: 0.30
+  S2: 0.40
+  S3: 0.25
+  S4: 0.05
+
+storage:
+  database_url_env: "DATABASE_URL"
+  data_dir_env: "DATA_DIR"
+  object_store_type_env: "OBJECT_STORE_TYPE"
+
+observability:
+  log_level_env: "LOG_LEVEL"
+  log_format_env: "LOG_FORMAT"
+  mlflow_tracking_uri_env: "MLFLOW_TRACKING_URI"

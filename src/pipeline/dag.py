@@ -1,0 +1,457 @@
+"""
+AfriGuard — Pipeline: CLI DAG
+
+Entry point for all pipeline stages. Run stages independently or as a full pipeline.
+
+Usage:
+  afriguard bootstrap-db
+  afriguard ingest-seeds [--language hausa] [--max-samples 500]
+  afriguard generate [--language hausa] [--category H01] [--severity S2] [--n-prompts 10]
+  afriguard filter [--language hausa]
+  afriguard assign-review
+  afriguard assemble [--version 0.1.0]
+  afriguard export [--version 0.1.0]
+  afriguard run-all [--language hausa]
+  afriguard review-ui
+  afriguard cost-report
+"""
+
+from __future__ import annotations
+
+import os
+import uuid
+from pathlib import Path
+
+import click
+import structlog
+
+from src.observability.logging_config import configure_logging
+
+configure_logging()
+logger = structlog.get_logger(__name__)
+
+# ---------------------------------------------------------------------------
+# CLI group
+# ---------------------------------------------------------------------------
+
+@click.group()
+def cli():
+    """AfriGuard — Afrocentric Safety-Alignment Data Pipeline"""
+    pass
+
+
+# ---------------------------------------------------------------------------
+# bootstrap-db
+# ---------------------------------------------------------------------------
+
+@cli.command("bootstrap-db")
+def bootstrap_db():
+    """Initialize (or migrate) the database schema."""
+    from src.storage.db import init_db
+    init_db()
+    click.secho("[OK] Database initialized.", fg="green")
+
+
+# ---------------------------------------------------------------------------
+# ingest-seeds
+# ---------------------------------------------------------------------------
+
+@cli.command("ingest-seeds")
+@click.option("--language", "-l", default=None, help="Only ingest seeds for this language")
+@click.option("--max-samples", default=500, show_default=True, help="Max records per source")
+@click.option("--source-ids", default=None, help="Comma-separated source IDs to ingest")
+def ingest_seeds(language, max_samples, source_ids):
+    """Fetch and store Afrocentric seed datasets."""
+    from src.storage.db import SessionLocal
+    from src.ingestion.seed_fetcher import SeedFetcher
+    from src.ingestion.seed_normalizer import SeedNormalizer
+    from src.ingestion.seed_store import SeedStore
+
+    fetcher = SeedFetcher()
+    normalizer = SeedNormalizer()
+    store = SeedStore()
+
+    languages = [language] if language else None
+    src_ids = [s.strip() for s in source_ids.split(",")] if source_ids else None
+
+    click.echo(f"[IN] Fetching seed data (max_samples={max_samples})…")
+    batches = fetcher.fetch_all(
+        max_samples_per_source=max_samples,
+        languages=languages,
+        source_ids=src_ids,
+    )
+
+    total_inserted = 0
+    total_skipped = 0
+
+    with SessionLocal() as session:
+        for source_config, records in batches:
+            if not records:
+                continue
+            docs, skipped = normalizer.normalize(source_config, records)
+            inserted, dup_skipped = store.save_batch(docs, session)
+            total_inserted += inserted
+            total_skipped += skipped + dup_skipped
+            click.echo(
+                f"  [{source_config.get('id')}] {inserted} inserted, "
+                f"{skipped + dup_skipped} skipped"
+            )
+
+        counts = store.count(session)
+
+    click.echo("\n[##] Seed document counts by language:")
+    for lang, count in sorted(counts.items()):
+        click.echo(f"  {lang}: {count}")
+
+    click.secho(
+        f"\n[OK] Done. Total inserted: {total_inserted}, skipped: {total_skipped}", fg="green"
+    )
+
+
+# ---------------------------------------------------------------------------
+# generate
+# ---------------------------------------------------------------------------
+
+@cli.command("generate")
+@click.option("--language", "-l", default=None, help="Target language (all if not set)")
+@click.option("--category", "-c", default=None, help="Harm category ID (e.g. H01)")
+@click.option("--severity", "-s", default=None, help="Severity code (S1-S4)")
+@click.option("--n-prompts", "-n", default=5, show_default=True, help="Prompts per combination")
+@click.option("--model", default=None, help="Override default model (e.g. gpt-4o)")
+@click.option("--dry-run", is_flag=True, help="Print config without calling API")
+def generate(language, category, severity, n_prompts, model, dry_run):
+    """Generate prompts and candidate responses using LLM."""
+    import yaml
+    from pathlib import Path
+
+    config_path = Path(__file__).parent.parent.parent / "configs" / "pipeline.yaml"
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    model_id = model or os.environ.get("PIPELINE_DEFAULT_MODEL", "gpt-4o")
+    languages = [language] if language else [l["name"] for l in config["languages"]]
+    categories = [category] if category else config["active_harm_categories"]
+    severities = [severity] if severity else ["S1", "S2", "S3", "S4"]
+
+    poc_max = int(os.environ.get("POC_MAX_ITEMS_PER_LANGUAGE", config["pipeline"]["poc_max_items_per_language"]))
+    n_candidates = int(os.environ.get("PIPELINE_CANDIDATES_PER_PROMPT", config["pipeline"]["candidates_per_prompt"]))
+
+    total_combinations = len(languages) * len(categories) * len(severities)
+    click.echo(
+        f"[>>] Generation plan: {len(languages)} languages × {len(categories)} categories "
+        f"× {len(severities)} severities = {total_combinations} combinations\n"
+        f"   {n_prompts} prompts × {n_candidates} candidates each = "
+        f"{total_combinations * n_prompts * n_candidates} total candidates\n"
+        f"   Model: {model_id}"
+    )
+
+    if dry_run:
+        click.secho("[?] Dry run — no API calls made.", fg="yellow")
+        for lang in languages:
+            for cat in categories:
+                for sev in severities:
+                    click.echo(f"  Would generate: {lang} / {cat} / {sev}")
+        return
+
+    from src.storage.db import SessionLocal
+    from src.generation.generation_job import GenerationJob
+
+    run_id = str(uuid.uuid4())
+    click.echo(f"   Run ID: {run_id}\n")
+
+    with SessionLocal() as session:
+        for lang in languages:
+            for cat in categories:
+                for sev in severities:
+                    click.echo(f"  Generating {lang} / {cat} / {sev}…", nl=False)
+                    try:
+                        job = GenerationJob(
+                            language=lang,
+                            harm_category=cat,
+                            severity=sev,
+                            model_id=model_id,
+                            n_candidates=n_candidates,
+                            run_id=run_id,
+                        )
+                        prompt_ids = job.run(session=session, n_prompts=n_prompts)
+                        click.secho(f" [+] {len(prompt_ids)} prompts", fg="green")
+                    except Exception as e:
+                        click.secho(f" [-] {e}", fg="red")
+
+    click.secho(f"\n[OK] Generation complete. Run ID: {run_id}", fg="green")
+
+
+# ---------------------------------------------------------------------------
+# filter
+# ---------------------------------------------------------------------------
+
+@cli.command("filter")
+@click.option("--language", "-l", default=None, help="Filter candidates for this language only")
+@click.option("--run-id", default=None, help="Filter only candidates from this run")
+def filter_candidates(language, run_id):
+    """Run language detection, quality scoring, similarity filtering, and deduplication."""
+    from src.storage.db import SessionLocal, CandidateResponseORM, GeneratedPromptORM
+    from src.filtering.language_detector import LanguageDetector
+    from src.filtering.quality_scorer import QualityScorer
+    from src.filtering.similarity_filter import SimilarityFilter
+    from src.filtering.deduplicator import Deduplicator
+    from src.generation.model_router import ModelRouter
+    import yaml
+    from pathlib import Path
+
+    config_path = Path(__file__).parent.parent.parent / "configs" / "pipeline.yaml"
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    sim_threshold = float(os.environ.get(
+        "PIPELINE_SIMILARITY_THRESHOLD",
+        config["pipeline"]["similarity_threshold"]
+    ))
+    min_quality = float(os.environ.get(
+        "PIPELINE_MIN_QUALITY_SCORE",
+        config["pipeline"]["min_quality_score"]
+    ))
+
+    # BUG FIX: LanguageDetector was constructed without a router, so the
+    # LLM fallback tier for low-resource languages (Yao, Sepedi, Northern
+    # Sotho) was silently disabled. We now pass a ModelRouter so the
+    # three-tier cascade (langdetect → langid → LLM) actually fires.
+    router = ModelRouter()
+    lang_detector = LanguageDetector(llm_router=router)
+
+    quality_scorer = QualityScorer()
+    sim_filter = SimilarityFilter(threshold=sim_threshold)
+    deduplicator = Deduplicator()
+
+    stats = {"language_fail": 0, "quality_fail": 0, "similarity_fail": 0, "dup_fail": 0, "passed": 0}
+
+    with SessionLocal() as session:
+        query = session.query(CandidateResponseORM).filter(
+            CandidateResponseORM.status == "raw"
+        )
+        if language:
+            query = query.filter(CandidateResponseORM.language == language)
+        if run_id:
+            query = query.filter(CandidateResponseORM.run_id == run_id)
+
+        candidates = query.all()
+        click.echo(f"[?] Filtering {len(candidates)} raw candidates…")
+
+        # Group by prompt_id for within-prompt similarity filtering
+        by_prompt: dict[str, list[CandidateResponseORM]] = {}
+        for c in candidates:
+            by_prompt.setdefault(c.prompt_id, []).append(c)
+
+        for prompt_id, cands in by_prompt.items():
+            texts = [c.response_text for c in cands]
+
+            # Step 1: Language detection
+            lang_passed = []
+            for c in cands:
+                ok, det_result = lang_detector.is_acceptable(c.response_text, c.language)
+                c.detected_language = det_result.detected
+                c.language_score = det_result.confidence
+                if not ok:
+                    c.status = "filtered_language"
+                    c.filter_reason = f"Language mismatch: detected={det_result.detected} conf={det_result.confidence:.2f}"
+                    stats["language_fail"] += 1
+                else:
+                    lang_passed.append(c)
+
+            # Step 2: Quality scoring
+            quality_passed = []
+            for c in lang_passed:
+                score = quality_scorer.score(c.response_text, c.response_type, c.language)
+                c.quality_score = score
+                if score < min_quality:
+                    c.status = "filtered_quality"
+                    c.filter_reason = f"Low quality score: {score:.2f}"
+                    stats["quality_fail"] += 1
+                else:
+                    quality_passed.append(c)
+
+            # Step 3: Within-prompt similarity filtering
+            if len(quality_passed) > 1:
+                qp_texts = [c.response_text for c in quality_passed]
+                keep_idx, max_sims = sim_filter.filter(qp_texts, language=quality_passed[0].language)
+                for i, c in enumerate(quality_passed):
+                    c.similarity_score = max_sims[i]
+                    if i not in keep_idx:
+                        c.status = "filtered_similarity"
+                        c.filter_reason = f"Near-duplicate: sim={max_sims[i]:.2f}"
+                        stats["similarity_fail"] += 1
+                sim_passed = [quality_passed[i] for i in keep_idx]
+            else:
+                for c in quality_passed:
+                    c.similarity_score = 0.0
+                sim_passed = quality_passed
+
+            # Step 4: Cross-batch deduplication
+            for c in sim_passed:
+                if deduplicator.is_duplicate(c.id, c.response_text):
+                    c.status = "filtered_duplicate"
+                    c.filter_reason = "Cross-batch near-duplicate"
+                    stats["dup_fail"] += 1
+                else:
+                    c.status = "passed_filter"
+                    stats["passed"] += 1
+
+        session.commit()
+
+    click.echo(f"\n[##] Filter results:")
+    for k, v in stats.items():
+        click.echo(f"  {k}: {v}")
+    click.secho(f"\n[OK] Passed filter: {stats['passed']}", fg="green")
+
+
+# ---------------------------------------------------------------------------
+# assign-review
+# ---------------------------------------------------------------------------
+
+@cli.command("assign-review")
+def assign_review():
+    """Trigger auto-escalation of S4 items and print review queue summary."""
+    from src.storage.db import SessionLocal, CandidateResponseORM
+    from src.review.escalation_queue import EscalationQueue
+    from sqlalchemy import func
+
+    escalation = EscalationQueue()
+
+    with SessionLocal() as session:
+        escalated = escalation.auto_escalate_s4(session)
+        click.echo(f"[!]  Auto-escalated {escalated} S4 items.")
+
+        # Summary by language
+        rows = (
+            session.query(
+                CandidateResponseORM.language,
+                func.count(CandidateResponseORM.id)
+            )
+            .filter(CandidateResponseORM.status == "passed_filter")
+            .group_by(CandidateResponseORM.language)
+            .all()
+        )
+
+    click.echo("\n[>] Pending review tasks by language:")
+    for lang, count in rows:
+        click.echo(f"  {lang}: {count} candidates")
+
+    click.secho("\n[OK] Review assignment complete. Start review UI with: afriguard review-ui", fg="green")
+
+
+# ---------------------------------------------------------------------------
+# assemble
+# ---------------------------------------------------------------------------
+
+@cli.command("assemble")
+@click.option("--version", "-v", default="0.1.0", show_default=True)
+@click.option("--language", "-l", default=None)
+def assemble(version, language):
+    """Assemble final dataset items from reviewed candidates."""
+    from src.storage.db import SessionLocal
+    from src.assembly.preference_builder import PreferenceBuilder
+    from src.assembly.qa_builder import QABuilder
+    from src.assembly.classification_builder import ClassificationBuilder
+
+    run_id = str(uuid.uuid4())
+
+    with SessionLocal() as session:
+        pref = PreferenceBuilder().build(session, version, run_id, language)
+        qa = QABuilder().build(session, version, run_id, language)
+        cls_ = ClassificationBuilder().build(session, version, run_id, language)
+
+    click.secho(
+        f"\n[OK] Dataset assembled (version {version}):\n"
+        f"  Preference pairs: {pref}\n"
+        f"  QA items:         {qa}\n"
+        f"  Classification:   {cls_}",
+        fg="green"
+    )
+
+
+# ---------------------------------------------------------------------------
+# export
+# ---------------------------------------------------------------------------
+
+@cli.command("export")
+@click.option("--version", "-v", default="0.1.0", show_default=True)
+@click.option("--language", "-l", default=None)
+def export(version, language):
+    """Export dataset to JSONL files with dataset card."""
+    from src.storage.db import SessionLocal
+    from src.assembly.dataset_versioner import DatasetVersioner
+
+    with SessionLocal() as session:
+        release_dir = DatasetVersioner().export(session, version, language)
+
+    click.secho(f"[OK] Dataset exported to: {release_dir}", fg="green")
+
+
+# ---------------------------------------------------------------------------
+# run-all
+# ---------------------------------------------------------------------------
+
+@cli.command("run-all")
+@click.option("--language", "-l", default=None)
+@click.option("--version", "-v", default="0.1.0")
+@click.option("--n-prompts", "-n", default=5)
+@click.pass_context
+def run_all(ctx, language, version, n_prompts):
+    """Run the full pipeline end-to-end (excluding human review)."""
+    click.echo("[>>] Running full AfriGuard pipeline…\n")
+    ctx.invoke(bootstrap_db)
+    ctx.invoke(ingest_seeds, language=language, max_samples=500, source_ids=None)
+    ctx.invoke(generate, language=language, category=None, severity=None,
+               n_prompts=n_prompts, model=None, dry_run=False)
+    ctx.invoke(filter_candidates, language=language, run_id=None)
+    ctx.invoke(assign_review)
+    click.echo("\n[||]  Pipeline paused for human review. Run 'afriguard review-ui' to start review.")
+    click.echo("   After review, run: afriguard assemble && afriguard export")
+
+
+# ---------------------------------------------------------------------------
+# review-ui
+# ---------------------------------------------------------------------------
+
+@cli.command("review-ui")
+@click.option("--host", default=None)
+@click.option("--port", default=None, type=int)
+def review_ui(host, port):
+    """Start the human review web UI."""
+    import uvicorn
+    from src.review.annotation_interface import app
+
+    _host = host or os.environ.get("REVIEW_UI_HOST", "127.0.0.1")
+    _port = port or int(os.environ.get("REVIEW_UI_PORT", "8000"))
+
+    click.secho(f"[WEB] Starting review UI at http://{_host}:{_port}", fg="cyan")
+    uvicorn.run(app, host=_host, port=_port)
+
+
+# ---------------------------------------------------------------------------
+# cost-report
+# ---------------------------------------------------------------------------
+
+@cli.command("cost-report")
+def cost_report():
+    """Print API cost summary."""
+    from src.storage.db import SessionLocal
+    from src.generation.cost_tracker import CostTracker
+
+    with SessionLocal() as session:
+        summary = CostTracker().summary(session)
+
+    click.echo(f"\n[$] Total cost: ${summary['total_usd']:.4f} USD\n")
+    click.echo(f"{'Language':<20} {'Model':<20} {'Calls':>8} {'Input Tok':>12} {'Output Tok':>12} {'Cost USD':>10}")
+    click.echo("─" * 84)
+    for row in summary["by_language_model"]:
+        click.echo(
+            f"{row['language'] or 'N/A':<20} {row['model_id']:<20} "
+            f"{row['api_calls']:>8} {row['prompt_tokens']:>12} "
+            f"{row['completion_tokens']:>12} ${row['total_usd']:>9.4f}"
+        )
+
+
+if __name__ == "__main__":
+    cli()
+
