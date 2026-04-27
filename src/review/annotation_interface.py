@@ -93,6 +93,7 @@ def _load_reviewer_passwords() -> dict[str, str]:
         "reviewer_northern_sotho": ("PASS_NORTHERN_SOTHO", "nsotho_review_poc"),
         "reviewer_yao":            ("PASS_YAO",            "yao_review_poc"),
         "reviewer_yoruba":         ("PASS_YORUBA",         "yoruba_review_poc"),
+        "reviewer_shona":          ("PASS_SHONA",          "shona_review_poc"),
         "admin":                   ("PASS_ADMIN",          "admin_afriguard_poc"),
     }
 
@@ -366,6 +367,7 @@ def _reviewer_language(reviewer_id: str) -> str:
         "reviewer_northern_sotho": "northern_sotho",
         "reviewer_yao": "yao",
         "reviewer_yoruba": "yoruba",
+        "reviewer_shona": "shona",
         "admin": "all",
     }
     return mapping.get(reviewer_id, "unknown")

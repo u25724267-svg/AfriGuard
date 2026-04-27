@@ -71,3 +71,16 @@ def test_clear():
     d.is_duplicate("a", "unique text content for clear test")
     d.clear()
     assert d.size() == 0
+
+
+def test_save_and_load(tmp_path):
+    d = Deduplicator()
+    text = "Persistent duplicate text about privacy safety in Nigeria."
+    d.is_duplicate("a", text)
+
+    path = tmp_path / "dedup.pkl"
+    d.save(str(path))
+
+    restored = Deduplicator()
+    assert restored.load(str(path)) is True
+    assert restored.is_duplicate("b", text) is True

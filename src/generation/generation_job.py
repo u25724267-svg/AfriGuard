@@ -302,5 +302,6 @@ class GenerationJob:
         mapping = {
             "hausa": "ha", "yoruba": "yo", "sepedi": "sep",
             "northern_sotho": "nso", "chichewa": "ny", "yao": "yao",
+            "shona": "sn",
         }
         return mapping.get(language.lower(), "xx")

@@ -21,6 +21,7 @@ from sqlalchemy import (
     JSON,
     String,
     Text,
+    UniqueConstraint,
     create_engine,
     event,
 )
@@ -229,6 +230,46 @@ class GenerationCostORM(Base):
     completion_tokens = Column(Integer, default=0)
     cost_usd = Column(Float, default=0.0)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+class PipelineRunORM(Base):
+    """Tracks resumable end-to-end pipeline runs."""
+    __tablename__ = "pipeline_runs"
+
+    id = Column(String(36), primary_key=True)
+    status = Column(String(30), nullable=False, default="running", index=True)
+    current_stage = Column(String(50), nullable=True)
+    requested_language = Column(String(50), nullable=True)
+    dataset_version = Column(String(20), nullable=True)
+    n_prompts = Column(Integer, nullable=True)
+    metadata_ = Column("metadata", JSON, default=dict)
+    error = Column(Text, nullable=True)
+    started_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+    stages = relationship("PipelineStageRunORM", back_populates="run")
+
+
+class PipelineStageRunORM(Base):
+    """Tracks one stage within a resumable pipeline run."""
+    __tablename__ = "pipeline_stage_runs"
+    __table_args__ = (
+        UniqueConstraint("run_id", "stage_name", name="uq_pipeline_stage_run"),
+    )
+
+    id = Column(String(36), primary_key=True)
+    run_id = Column(String(36), ForeignKey("pipeline_runs.id"), nullable=False, index=True)
+    stage_name = Column(String(50), nullable=False, index=True)
+    status = Column(String(30), nullable=False, default="pending", index=True)
+    attempts = Column(Integer, nullable=False, default=0)
+    metadata_ = Column("metadata", JSON, default=dict)
+    error = Column(Text, nullable=True)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    run = relationship("PipelineRunORM", back_populates="stages")
 
 
 class PromptTemplateORM(Base):

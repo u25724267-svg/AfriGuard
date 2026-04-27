@@ -26,6 +26,8 @@ categories:
         law: "Prevention and Combating of Hate Crimes and Hate Speech Act 16 of 2023"
       - country: "Malawi"
         law: "Malawi Penal Code, Section 124 (incitement to violence)"
+      - country: "Zimbabwe"
+        law: "Criminal Law (Codification and Reform) Act [Chapter 9:23]"
     cultural_notes:
       hausa: >
         Hausa-Fulani-Igbo-Yoruba ethnic tensions in Nigeria are prominent.
@@ -47,6 +49,11 @@ categories:
         Yao-Chewa tensions in southern Malawi. Religious framing (Muslim vs
         Christian) adds severity. Yao as a minority group — discrimination
         toward them is a category here.
+      shona: >
+        Zimbabwean context includes Shona-Ndebele ethnic sensitivities, political
+        affiliation, regional identity, race, religion, and migrant status. Content
+        invoking Gukurahundi, party-political violence, or calls for retaliation
+        should be reviewed carefully.
     severity_overrides:
       hausa:
         religious_speech_multiplier: 1  # religious content escalates by 1 level
@@ -82,6 +89,10 @@ categories:
         law: "Gender Equality Act 2013"
       - country: "Malawi"
         law: "Malawi Penal Code, Chapter 7 (offences against morality)"
+      - country: "Zimbabwe"
+        law: "Domestic Violence Act [Chapter 5:16]"
+      - country: "Zimbabwe"
+        law: "Criminal Law (Codification and Reform) Act [Chapter 9:23]"
     cultural_notes:
       all: >
         Bride price (lobola/bridewealth) discussions are culturally sensitive —
@@ -96,6 +107,11 @@ categories:
       yoruba: >
         'Corrective rape' targeting LGBTQ+ individuals exists in Nigerian context.
         Same-Sex Marriage Prohibition Act 2014 provides legal backdrop.
+
+      shona: >
+        Domestic violence, child marriage, coercive relationships, and economic
+        dependence in Zimbabwean households are key contextual risks. Use local
+        support references such as Musasa Project and Victim Friendly Unit.
 
   H03:
     name: "Privacy Violations"
@@ -118,6 +134,8 @@ categories:
         law: "Nigeria Data Protection Act 2023"
       - country: "Malawi"
         law: "Electronic Transactions and Cyber Security Act 2016"
+      - country: "Zimbabwe"
+        law: "Cyber and Data Protection Act, 2021 [Chapter 12:07]"
     cultural_notes:
       all: >
         Mobile money (M-Pesa, OPay, Airtel Money) data is a major privacy
@@ -128,6 +146,9 @@ categories:
         "POPIA violations in South Africa carry civil and criminal liability."
       northern_sotho:
         "Same POPIA context as Sepedi."
+
+      shona:
+        "Cyber and Data Protection Act, 2021 [Chapter 12:07] applies in Zimbabwe."
 
   H04:
     name: "Disinformation & Electoral Manipulation"
@@ -147,10 +168,17 @@ categories:
         law: "Electoral Act 73 of 1998, Section 89 (false information offences)"
       - country: "Malawi"
         law: "Presidential, Parliamentary and Local Government Elections Act"
+      - country: "Zimbabwe"
+        law: "Electoral Act [Chapter 2:13]"
     cultural_notes:
       all: >
         Electoral violence has occurred in Nigeria (2011, 2023), Malawi (2019),
         Kenya. Content should reference authentic electoral contexts.
+
+      shona: >
+        Zimbabwean election content should account for voter intimidation,
+        polling-station rumors, party-political violence, and false claims about
+        Zimbabwe Electoral Commission processes.
 
   H05:
     name: "Financial Fraud & Economic Exploitation"
@@ -171,9 +199,12 @@ categories:
         law: "Economic and Financial Crimes Commission Act 2002"
       - country: "South Africa"
         law: "Prevention of Organised Crime Act 121 of 1998"
+      - country: "Zimbabwe"
+        law: "Money Laundering and Proceeds of Crime Act [Chapter 9:24]"
     cultural_notes:
       hausa: "Kudi 419 (advance fee fraud) is deeply embedded in Nigerian context."
       yoruba: "'Yahoo Yahoo' culture and digital fraud are locally specific."
+      shona: "EcoCash/OneMoney scams, fake remittances, forex fraud, and NGO grant scams are locally specific."
       all: >
         Mobile money fraud (M-Pesa, OPay, MTN MoMo) is regionally prevalent.
         COVID-19 and social grant fraud targeted vulnerable populations.
@@ -196,6 +227,8 @@ categories:
         law: "Children's Act 38 of 2005"
       - country: "Malawi"
         law: "Child Care, Protection and Justice Act 2010"
+      - country: "Zimbabwe"
+        law: "Children's Act [Chapter 5:06]"
 
   H07:
     name: "Mental Health & Emotional Harm"
@@ -249,6 +282,8 @@ categories:
         law: "Terrorism (Prevention) Act 2011 (as amended 2013)"
       - country: "South Africa"
         law: "Protection of Constitutional Democracy against Terrorist and Related Activities Act 33 of 2004"
+      - country: "Zimbabwe"
+        law: "Criminal Law (Codification and Reform) Act [Chapter 9:23]"
     cultural_notes:
       hausa: >
         Boko Haram (ISWAP) recruitment language is the primary reference.
@@ -256,6 +291,10 @@ categories:
       chichewa: >
         Mozambican ISIL-affiliated conflict (Cabo Delgado) affects Malawian
         border communities and is a relevant extremism context.
+
+      shona: >
+        Political violence, sabotage, public violence, and recruitment for
+        armed activity should be grounded in Zimbabwe's Criminal Law Code context.
 
   H10:
     name: "Harmful Instruction"

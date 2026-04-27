@@ -43,6 +43,12 @@ def test_get_legal_references_sepedi():
     assert any("South Africa" in r for r in refs)
 
 
+def test_get_legal_references_shona():
+    registry = HarmRegistry()
+    refs = registry.get_legal_references("H03", "shona")
+    assert any("Zimbabwe" in r for r in refs)
+
+
 def test_get_cultural_notes_chichewa():
     registry = HarmRegistry()
     notes = registry.get_cultural_notes("H01", "chichewa")

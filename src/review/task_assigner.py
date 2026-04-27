@@ -28,6 +28,7 @@ _LANGUAGE_REVIEWER_MAP = {
     "northern_sotho": "reviewer_northern_sotho",
     "yao": "reviewer_yao",
     "yoruba": "reviewer_yoruba",
+    "shona": "reviewer_shona",
 }
 
 

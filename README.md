@@ -4,8 +4,8 @@
 
 ## Overview
 
-AfriGuard generates culturally authentic safety-alignment datasets for six African languages:
-**Hausa · Sepedi · Chichewa · Northern Sotho · Yao · Yoruba**
+AfriGuard generates culturally authentic safety-alignment datasets for seven African languages:
+**Hausa · Sepedi · Chichewa · Northern Sotho · Yao · Yoruba · Shona**
 
 Unlike translation-based approaches, AfriGuard generates data **from scratch** using:
 - Afrocentric harm taxonomy grounded in African law (POPIA, VAPP, Sexual Offences Act, Malawi Penal Code)
@@ -138,7 +138,32 @@ afriguard review-ui           Start human review web app
 afriguard assemble            Build preference/QA/classification items
 afriguard export              Export to JSONL files with dataset card
 afriguard run-all             Run full pipeline (stops before review)
+afriguard run-all --resume    Resume the latest incomplete run
+afriguard resume-status       Show autoresume checkpoint status
 afriguard cost-report         Show API cost breakdown
+```
+
+## Autoresume
+
+`afriguard run-all` writes durable checkpoints to the database for each stage:
+`bootstrap_db`, `ingest_seeds`, `generate`, `filter`, and `assign_review`.
+
+If a run fails, resume it with:
+
+```bash
+afriguard run-all --resume --run-id <RUN_ID>
+```
+
+If you omit `--run-id`, AfriGuard resumes the latest incomplete run:
+
+```bash
+afriguard run-all --resume
+```
+
+Check progress with:
+
+```bash
+afriguard resume-status --run-id <RUN_ID>
 ```
 
 ## Running Tests

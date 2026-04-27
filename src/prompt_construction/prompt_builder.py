@@ -64,6 +64,11 @@ _LANG_INSTRUCTIONS: dict[str, str] = {
         "Do NOT use English. Use authentic Yao vocabulary and phrasing "
         "as spoken in southern Malawi."
     ),
+    "shona": (
+        "Write the user prompt ENTIRELY in Shona (chiShona). "
+        "Do NOT use English. Use authentic Shona vocabulary and phrasing "
+        "as spoken in Zimbabwe."
+    ),
 }
 
 # ---------------------------------------------------------------------------

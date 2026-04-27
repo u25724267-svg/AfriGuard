@@ -52,7 +52,15 @@ class SeedDocument(BaseModel):
     @field_validator("language")
     @classmethod
     def validate_language(cls, v: str) -> str:
-        allowed = {"hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba"}
+        allowed = {
+            "hausa",
+            "sepedi",
+            "chichewa",
+            "northern_sotho",
+            "yao",
+            "yoruba",
+            "shona",
+        }
         if v not in allowed:
             raise ValueError(f"Language '{v}' not in supported set: {allowed}")
         return v

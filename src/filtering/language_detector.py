@@ -21,10 +21,11 @@ _LANG_CODE_MAP = {
     "northern_sotho": {"nso"},
     "chichewa": {"ny", "nya"},
     "yao": {"yao"},  # poorly supported — use LLM fallback
+    "shona": {"sn", "sna"},
 }
 
 # Languages with poor library support — use LLM check
-_LOW_RESOURCE_FALLBACK = {"yao", "sepedi", "northern_sotho"}
+_LOW_RESOURCE_FALLBACK = {"yao", "sepedi", "northern_sotho", "shona"}
 
 
 class LanguageDetectionResult:

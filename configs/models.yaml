@@ -10,7 +10,7 @@ models:
     presence_penalty: 0.0
     cost_per_1k_input_tokens: 0.005
     cost_per_1k_output_tokens: 0.015
-    supports_languages: ["hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba"]
+    supports_languages: ["hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba", "shona"]
     tier: "primary"
 
   gpt-4o-mini:
@@ -23,9 +23,9 @@ models:
     presence_penalty: 0.0
     cost_per_1k_input_tokens: 0.00015
     cost_per_1k_output_tokens: 0.0006
-    supports_languages: ["hausa", "yoruba"]
+    supports_languages: ["hausa", "yoruba", "shona"]
     tier: "economy"
-    notes: "Use only for Hausa and Yoruba where quality is acceptable. Avoid for low-resource languages."
+    notes: "Use only for Hausa, Yoruba, and Shona where quality is acceptable. Avoid for lower-resource languages."
 
   claude-3-5-sonnet:
     provider: "anthropic"
@@ -34,7 +34,7 @@ models:
     temperature: 0.9
     cost_per_1k_input_tokens: 0.003
     cost_per_1k_output_tokens: 0.015
-    supports_languages: ["hausa", "yoruba"]
+    supports_languages: ["hausa", "yoruba", "shona"]
     tier: "secondary"
     notes: "Secondary provider for diversity. Requires ANTHROPIC_API_KEY."
 
@@ -45,7 +45,7 @@ models:
     temperature: 0.9
     cost_per_1k_input_tokens: 0.00125
     cost_per_1k_output_tokens: 0.005
-    supports_languages: ["hausa", "yoruba"]
+    supports_languages: ["hausa", "yoruba", "shona"]
     tier: "secondary"
     notes: "Optional. Requires GOOGLE_API_KEY."
 

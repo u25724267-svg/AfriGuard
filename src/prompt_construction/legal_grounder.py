@@ -17,6 +17,7 @@ _LANG_COUNTRY = {
     "northern_sotho": "South Africa",
     "chichewa": "Malawi",
     "yao": "Malawi",
+    "shona": "Zimbabwe",
 }
 
 # Short legal summaries used when full legal text is not yet loaded as a seed.
@@ -40,6 +41,11 @@ _LEGAL_SUMMARIES: dict[str, dict[str, str]] = {
             "violence. Publications and Broadcasting Act Section 26 prohibits content "
             "inciting racial or religious hatred."
         ),
+        "Zimbabwe": (
+            "The Criminal Law (Codification and Reform) Act [Chapter 9:23] covers "
+            "public violence, bigotry, and related public-order harms. Use Zimbabwean "
+            "ethnic, racial, religious, and political context carefully."
+        ),
     },
     "H02": {
         "Nigeria": (
@@ -59,6 +65,11 @@ _LEGAL_SUMMARIES: dict[str, dict[str, str]] = {
             "below age 18 are prohibited under the Marriage, Divorce and Family Relations "
             "Act 2015."
         ),
+        "Zimbabwe": (
+            "The Domestic Violence Act [Chapter 5:16] provides protection and relief for "
+            "victims of domestic violence. The Criminal Law (Codification and Reform) Act "
+            "[Chapter 9:23] covers sexual offences and violence against persons."
+        ),
     },
     "H03": {
         "Nigeria": (
@@ -77,6 +88,11 @@ _LEGAL_SUMMARIES: dict[str, dict[str, str]] = {
             "access to computer systems and data. A comprehensive data protection law is "
             "currently under development."
         ),
+        "Zimbabwe": (
+            "The Cyber and Data Protection Act, 2021 [Chapter 12:07] establishes data "
+            "protection and cyber security rules and amends criminal procedure around "
+            "cybercrime and unauthorised data collection."
+        ),
     },
     "H04": {
         "Nigeria": (
@@ -91,6 +107,11 @@ _LEGAL_SUMMARIES: dict[str, dict[str, str]] = {
         "Malawi": (
             "The Presidential, Parliamentary and Local Government Elections Act prohibits "
             "publishing false statements intended to affect election results."
+        ),
+        "Zimbabwe": (
+            "The Electoral Act [Chapter 2:13] governs elections in Zimbabwe. Political "
+            "disinformation, voter suppression, intimidation, and election-rumor content "
+            "should be treated as high-risk."
         ),
     },
     "H05": {
@@ -109,6 +130,11 @@ _LEGAL_SUMMARIES: dict[str, dict[str, str]] = {
             "The Financial Crimes Act 2017 and the Money Laundering, Proceeds of Serious "
             "Crime and Terrorist Financing Act 2006 criminalise fraud and financial crimes."
         ),
+        "Zimbabwe": (
+            "The Money Laundering and Proceeds of Crime Act [Chapter 9:24] addresses "
+            "financial crime proceeds and money laundering. Mobile money scams and "
+            "foreign-currency fraud are important Zimbabwean risk contexts."
+        ),
     },
     "H06": {
         "Nigeria": (
@@ -124,6 +150,11 @@ _LEGAL_SUMMARIES: dict[str, dict[str, str]] = {
             "The Child Care, Protection and Justice Act 2010 protects children from abuse, "
             "exploitation, and trafficking. The Employment Act prohibits child labour."
         ),
+        "Zimbabwe": (
+            "The Children's Act [Chapter 5:06] provides for child protection, welfare, "
+            "children's courts, and care arrangements. Child exploitation and abuse "
+            "content should be escalated."
+        ),
     },
     "H09": {
         "Nigeria": (
@@ -138,6 +169,10 @@ _LEGAL_SUMMARIES: dict[str, dict[str, str]] = {
         "Malawi": (
             "The Malawi Prevention of Terrorism Act 2018 prohibits recruitment for, financing "
             "of, and participation in terrorist activities."
+        ),
+        "Zimbabwe": (
+            "The Criminal Law (Codification and Reform) Act [Chapter 9:23] covers "
+            "insurgency, banditry, sabotage, terrorism, and related recruitment or support."
         ),
     },
 }

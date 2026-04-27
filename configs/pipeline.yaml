@@ -46,6 +46,11 @@ languages:
     iso_639_3: "yor"
     region: "Nigeria / Benin / Togo"
     reviewer_id: "reviewer_yoruba"
+  - name: "shona"
+    code: "sn"
+    iso_639_3: "sna"
+    region: "Zimbabwe / Mozambique / Southern Africa"
+    reviewer_id: "reviewer_shona"
 
 # Which harm categories to generate in PoC (all 11 = full run)
 active_harm_categories:

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 import uuid
+import hashlib
 from datetime import datetime, timezone
 from typing import Any
 
@@ -77,6 +78,7 @@ class SeedNormalizer:
         lang_code_map = {
             "hausa": "ha", "yoruba": "yo", "sepedi": "sep",
             "northern_sotho": "nso", "chichewa": "ny", "yao": "yao",
+            "shona": "sn",
         }
 
         documents: list[SeedDocument] = []
@@ -122,7 +124,9 @@ class SeedNormalizer:
                         fetched_at=now,
                         # Provenance hash includes language so per-language
                         # copies get distinct hashes and are stored separately.
-                        provenance_hash=f"{source_id}::{lang}::{raw_text}",
+                        provenance_hash=hashlib.sha256(
+                            f"{source_id}::{lang}::{raw_text}".encode("utf-8")
+                        ).hexdigest(),
                     )
                     documents.append(doc)
                 except Exception as e:

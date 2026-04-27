@@ -1,6 +1,7 @@
 """Integration test — Ingestion pipeline"""
 
 import uuid
+import re
 from datetime import datetime, timezone
 
 import pytest
@@ -109,3 +110,22 @@ def test_seed_store_count(db_session):
 
     counts = store.count(db_session)
     assert counts.get("yoruba", 0) >= 2
+
+
+def test_normalizer_expands_multilanguage_sources_with_hashes():
+    """Multi-language seed sources produce one SHA-256 provenance hash per language."""
+    source_config = {
+        "id": "multi_source",
+        "name": "Multi Source",
+        "languages": ["hausa", "yoruba", "shona"],
+        "harm_domains": ["H01"],
+        "license": "test",
+    }
+    records = [{"text": "Shared source text long enough to become a valid seed document.", "metadata": {}}]
+
+    docs, skipped = SeedNormalizer().normalize(source_config, records)
+
+    assert skipped == 0
+    assert {doc.language for doc in docs} == {"hausa", "yoruba", "shona"}
+    assert len({doc.provenance_hash for doc in docs}) == 3
+    assert all(re.fullmatch(r"[0-9a-f]{64}", doc.provenance_hash) for doc in docs)

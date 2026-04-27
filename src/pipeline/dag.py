@@ -11,7 +11,8 @@ Usage:
   afriguard assign-review
   afriguard assemble [--version 0.1.0]
   afriguard export [--version 0.1.0]
-  afriguard run-all [--language hausa]
+  afriguard run-all [--language hausa] [--resume] [--run-id <id>]
+  afriguard resume-status [--run-id <id>]
   afriguard review-ui
   afriguard cost-report
 """
@@ -118,8 +119,9 @@ def ingest_seeds(language, max_samples, source_ids):
 @click.option("--severity", "-s", default=None, help="Severity code (S1-S4)")
 @click.option("--n-prompts", "-n", default=5, show_default=True, help="Prompts per combination")
 @click.option("--model", default=None, help="Override default model (e.g. gpt-4o)")
+@click.option("--run-id", default=None, help="Reuse an existing pipeline run ID")
 @click.option("--dry-run", is_flag=True, help="Print config without calling API")
-def generate(language, category, severity, n_prompts, model, dry_run):
+def generate(language, category, severity, n_prompts, model, run_id, dry_run):
     """Generate prompts and candidate responses using LLM."""
     import yaml
     from pathlib import Path
@@ -153,17 +155,40 @@ def generate(language, category, severity, n_prompts, model, dry_run):
                     click.echo(f"  Would generate: {lang} / {cat} / {sev}")
         return
 
-    from src.storage.db import SessionLocal
+    from src.storage.db import SessionLocal, GeneratedPromptORM
     from src.generation.generation_job import GenerationJob
 
-    run_id = str(uuid.uuid4())
+    run_id = run_id or str(uuid.uuid4())
     click.echo(f"   Run ID: {run_id}\n")
 
     with SessionLocal() as session:
         for lang in languages:
             for cat in categories:
                 for sev in severities:
-                    click.echo(f"  Generating {lang} / {cat} / {sev}…", nl=False)
+                    existing = (
+                        session.query(GeneratedPromptORM)
+                        .filter(
+                            GeneratedPromptORM.run_id == run_id,
+                            GeneratedPromptORM.language == lang,
+                            GeneratedPromptORM.harm_category == cat,
+                            GeneratedPromptORM.severity == sev,
+                            GeneratedPromptORM.status == "generated",
+                        )
+                        .count()
+                    )
+                    remaining = max(0, n_prompts - existing)
+                    if remaining == 0:
+                        click.secho(
+                            f"  Skipping {lang} / {cat} / {sev}: {existing}/{n_prompts} prompts already generated",
+                            fg="cyan",
+                        )
+                        continue
+
+                    click.echo(
+                        f"  Generating {lang} / {cat} / {sev} "
+                        f"({remaining} remaining, {existing} existing)…",
+                        nl=False,
+                    )
                     try:
                         job = GenerationJob(
                             language=lang,
@@ -173,7 +198,7 @@ def generate(language, category, severity, n_prompts, model, dry_run):
                             n_candidates=n_candidates,
                             run_id=run_id,
                         )
-                        prompt_ids = job.run(session=session, n_prompts=n_prompts)
+                        prompt_ids = job.run(session=session, n_prompts=remaining)
                         click.secho(f" [+] {len(prompt_ids)} prompts", fg="green")
                     except Exception as e:
                         click.secho(f" [-] {e}", fg="red")
@@ -222,6 +247,7 @@ def filter_candidates(language, run_id):
     quality_scorer = QualityScorer()
     sim_filter = SimilarityFilter(threshold=sim_threshold)
     deduplicator = Deduplicator()
+    deduplicator.load()
 
     stats = {"language_fail": 0, "quality_fail": 0, "similarity_fail": 0, "dup_fail": 0, "passed": 0}
 
@@ -297,6 +323,8 @@ def filter_candidates(language, run_id):
                     stats["passed"] += 1
 
         session.commit()
+
+    deduplicator.save()
 
     click.echo(f"\n[##] Filter results:")
     for k, v in stats.items():
@@ -391,22 +419,139 @@ def export(version, language):
 # run-all
 # ---------------------------------------------------------------------------
 
+@cli.command("resume-status")
+@click.option("--run-id", default=None, help="Show a specific run; otherwise latest run")
+def resume_status(run_id):
+    """Show autoresume checkpoint status for a pipeline run."""
+    from src.storage.db import SessionLocal, PipelineRunORM, PipelineStageRunORM
+
+    with SessionLocal() as session:
+        run = session.get(PipelineRunORM, run_id) if run_id else (
+            session.query(PipelineRunORM)
+            .order_by(PipelineRunORM.updated_at.desc())
+            .first()
+        )
+        if run is None:
+            click.secho("No pipeline run checkpoints found.", fg="yellow")
+            return
+
+        click.secho(f"Run: {run.id}", fg="cyan")
+        click.echo(f"  status: {run.status}")
+        click.echo(f"  current_stage: {run.current_stage or 'none'}")
+        click.echo(f"  language: {run.requested_language or 'all'}")
+        click.echo(f"  version: {run.dataset_version or 'n/a'}")
+        click.echo(f"  n_prompts: {run.n_prompts or 'n/a'}")
+        if run.error:
+            click.echo(f"  error: {run.error}")
+
+        stages = (
+            session.query(PipelineStageRunORM)
+            .filter(PipelineStageRunORM.run_id == run.id)
+            .order_by(PipelineStageRunORM.started_at.asc())
+            .all()
+        )
+        click.echo("\nStages:")
+        for stage in stages:
+            completed = stage.completed_at.isoformat() if stage.completed_at else "-"
+            click.echo(
+                f"  {stage.stage_name:<14} {stage.status:<10} "
+                f"attempts={stage.attempts} completed={completed}"
+            )
+            if stage.error:
+                click.echo(f"    error: {stage.error}")
+
+
 @cli.command("run-all")
 @click.option("--language", "-l", default=None)
 @click.option("--version", "-v", default="0.1.0")
 @click.option("--n-prompts", "-n", default=5)
+@click.option("--run-id", default=None, help="Resume or create a run with this ID")
+@click.option("--resume", is_flag=True, help="Resume the latest incomplete run, or --run-id if provided")
 @click.pass_context
-def run_all(ctx, language, version, n_prompts):
+def run_all(ctx, language, version, n_prompts, run_id, resume):
     """Run the full pipeline end-to-end (excluding human review)."""
-    click.echo("[>>] Running full AfriGuard pipeline…\n")
+    click.echo("[>>] Running full AfriGuard pipeline...\n")
+
+    # `bootstrap-db` must always be safe to run first because it creates the
+    # checkpoint tables used by autoresume.
     ctx.invoke(bootstrap_db)
-    ctx.invoke(ingest_seeds, language=language, max_samples=500, source_ids=None)
-    ctx.invoke(generate, language=language, category=None, severity=None,
-               n_prompts=n_prompts, model=None, dry_run=False)
-    ctx.invoke(filter_candidates, language=language, run_id=None)
-    ctx.invoke(assign_review)
+
+    from src.storage.db import SessionLocal
+    from src.pipeline.resume import PipelineResumeTracker
+
+    with SessionLocal() as session:
+        tracker = PipelineResumeTracker(session)
+        run = tracker.start_or_resume_run(
+            run_id=run_id,
+            resume=resume,
+            language=language,
+            version=version,
+            n_prompts=n_prompts,
+        )
+        active_run_id = run.id
+        tracker.mark_stage_completed(active_run_id, "bootstrap_db")
+
+    click.secho(f"[RUN] Pipeline run ID: {active_run_id}", fg="cyan")
+
+    def invoke_resumable(stage_name, callback):
+        with SessionLocal() as session:
+            tracker = PipelineResumeTracker(session)
+            if resume and tracker.stage_is_completed(active_run_id, stage_name):
+                click.secho(f"[SKIP] {stage_name} already completed for {active_run_id}", fg="cyan")
+                return
+            tracker.mark_stage_started(active_run_id, stage_name)
+
+        try:
+            callback()
+        except Exception as exc:
+            with SessionLocal() as session:
+                PipelineResumeTracker(session).mark_stage_failed(
+                    active_run_id,
+                    stage_name,
+                    str(exc),
+                )
+            click.secho(
+                f"\n[FAILED] Stage '{stage_name}' failed. Resume with:\n"
+                f"  afriguard run-all --resume --run-id {active_run_id}",
+                fg="red",
+            )
+            raise
+
+        with SessionLocal() as session:
+            PipelineResumeTracker(session).mark_stage_completed(active_run_id, stage_name)
+
+    invoke_resumable(
+        "ingest_seeds",
+        lambda: ctx.invoke(ingest_seeds, language=language, max_samples=500, source_ids=None),
+    )
+    invoke_resumable(
+        "generate",
+        lambda: ctx.invoke(
+            generate,
+            language=language,
+            category=None,
+            severity=None,
+            n_prompts=n_prompts,
+            model=None,
+            run_id=active_run_id,
+            dry_run=False,
+        ),
+    )
+    invoke_resumable(
+        "filter",
+        lambda: ctx.invoke(filter_candidates, language=language, run_id=active_run_id),
+    )
+    invoke_resumable("assign_review", lambda: ctx.invoke(assign_review))
+
+    with SessionLocal() as session:
+        PipelineResumeTracker(session).mark_run_paused(
+            active_run_id,
+            "Pipeline paused for human review.",
+        )
+
     click.echo("\n[||]  Pipeline paused for human review. Run 'afriguard review-ui' to start review.")
     click.echo("   After review, run: afriguard assemble && afriguard export")
+    click.echo(f"   Resume this run with: afriguard run-all --resume --run-id {active_run_id}")
 
 
 # ---------------------------------------------------------------------------

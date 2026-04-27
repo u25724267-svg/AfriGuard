@@ -121,6 +121,7 @@ class HarmRegistry:
             "northern_sotho": ["South Africa"],
             "chichewa": ["Malawi"],
             "yao": ["Malawi"],
+            "shona": ["Zimbabwe"],
         }
         relevant_countries = lang_country_map.get(language.lower(), [])
         refs = []

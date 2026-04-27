@@ -59,7 +59,7 @@ sources:
     type: "huggingface"
     hf_path: "strombergnlp/broad_twitter_corpus"
     hf_split: "train"
-    languages: ["hausa", "yoruba", "sepedi", "northern_sotho"]
+    languages: ["hausa", "yoruba", "sepedi", "northern_sotho", "shona"]
     harm_domains: ["H01"]
     text_column: "text"
     license: "CC BY 4.0"
@@ -134,12 +134,24 @@ sources:
     is_token_list: true
     license: "CC BY 4.0"
 
+  - id: "shona_news_context"
+    name: "Shona News Context"
+    description: "Shona news/context seed text for Zimbabwe-specific cultural grounding"
+    type: "huggingface"
+    hf_path: "masakhane/masakhanews"
+    hf_split: "train"
+    languages: ["shona"]
+    harm_domains: ["H04", "H09", "context"]
+    text_column: "text"
+    license: "CC BY 4.0"
+    notes: "Used as a Shona/Zimbabwe context seed where available in the upstream corpus"
+
   - id: "custom_afriguard_lexicon"
     name: "AfriGuard Cultural Lexicon"
     description: "Hand-curated list of culturally authentic names, places, and expressions per language"
     type: "local"
     local_path: "data/seeds/custom/afriguard_lexicon.json"
-    languages: ["hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba"]
+    languages: ["hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba", "shona"]
     harm_domains: ["entities"]
     text_column: "name"
     license: "AfriGuard (MIT)"

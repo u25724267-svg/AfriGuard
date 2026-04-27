@@ -117,6 +117,22 @@ _FALLBACK_LEXICON: dict[str, dict[str, list[str]]] = {
             "Mangochi District Council",
         ],
     },
+    "shona": {
+        "person_names": [
+            "Tendai", "Rudo", "Tawanda", "Nyasha", "Kudzai", "Farai",
+            "Tatenda", "Chipo", "Munyaradzi", "Vimbai", "Simbarashe", "Memory",
+            "Blessing", "Munashe", "Tafadzwa", "Tsitsi",
+        ],
+        "place_names": [
+            "Harare", "Chitungwiza", "Mutare", "Masvingo", "Gweru", "Bindura",
+            "Marondera", "Murewa", "Chinhoyi", "Rusape", "Buhera", "Mbare",
+        ],
+        "organizations": [
+            "Zimbabwe Electoral Commission", "Legal Resources Foundation",
+            "Musasa Project", "Zimbabwe Republic Police Victim Friendly Unit",
+            "Harare City Council",
+        ],
+    },
 }
 
 
