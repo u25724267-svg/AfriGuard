@@ -28,10 +28,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Session, relationship, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from src.config.env import load_project_env
+
 # ---------------------------------------------------------------------------
 # Engine setup
 # ---------------------------------------------------------------------------
 
+load_project_env()
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./afriguard.db")
 
 _connect_args: dict[str, Any] = {}

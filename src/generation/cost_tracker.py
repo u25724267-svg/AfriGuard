@@ -15,8 +15,10 @@ import structlog
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
+from src.config.env import load_project_env
 from src.storage.db import GenerationCostORM
 
+load_project_env()
 logger = structlog.get_logger(__name__)
 
 _ALERT_THRESHOLD = float(os.environ.get("PIPELINE_BUDGET_ALERT_USD", "50.0"))

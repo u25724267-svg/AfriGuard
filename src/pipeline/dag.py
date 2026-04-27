@@ -26,8 +26,10 @@ from pathlib import Path
 import click
 import structlog
 
+from src.config.env import load_project_env
 from src.observability.logging_config import configure_logging
 
+load_project_env()
 configure_logging()
 logger = structlog.get_logger(__name__)
 
@@ -565,7 +567,8 @@ def run_all(ctx, language, version, n_prompts, run_id, resume):
 @cli.command("review-ui")
 @click.option("--host", default=None)
 @click.option("--port", default=None, type=int)
-def review_ui(host, port):
+@click.option("--auto-port", is_flag=True, help="Use the next available port if the requested port is busy")
+def review_ui(host, port, auto_port):
     """Start the human review web UI."""
     import uvicorn
     from src.review.annotation_interface import app
@@ -573,8 +576,33 @@ def review_ui(host, port):
     _host = host or os.environ.get("REVIEW_UI_HOST", "127.0.0.1")
     _port = port or int(os.environ.get("REVIEW_UI_PORT", "8000"))
 
+    if auto_port:
+        while _port < 9000 and not _port_available(_host, _port):
+            _port += 1
+    elif not _port_available(_host, _port):
+        click.secho(
+            f"[ERROR] Port {_port} is already in use on {_host}.\n"
+            f"Try: afriguard review-ui --port {_port + 1}\n"
+            f"Or:  afriguard review-ui --auto-port",
+            fg="red",
+        )
+        raise click.Abort()
+
     click.secho(f"[WEB] Starting review UI at http://{_host}:{_port}", fg="cyan")
     uvicorn.run(app, host=_host, port=_port)
+
+
+def _port_available(host: str, port: int) -> bool:
+    """Return True if the TCP host/port can be bound."""
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind((host, port))
+        except OSError:
+            return False
+    return True
 
 
 # ---------------------------------------------------------------------------

@@ -12,6 +12,9 @@ from typing import Any
 
 import structlog
 
+from src.config.env import load_project_env
+
+load_project_env()
 logger = structlog.get_logger(__name__)
 
 

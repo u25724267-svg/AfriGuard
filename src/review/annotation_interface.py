@@ -35,10 +35,12 @@ from src.storage.db import (
 )
 from src.review.task_assigner import TaskAssigner
 from src.review.escalation_queue import EscalationQueue
+from src.config.env import load_project_env
 from src.observability.logging_config import configure_logging
 
 import structlog
 
+load_project_env()
 configure_logging()
 logger = structlog.get_logger(__name__)
 
@@ -53,11 +55,15 @@ app = FastAPI(title="AfriGuard Review UI", version="0.1.0")
 # In production (AFRIGUARD_ENV=production), missing SECRET_KEY is a hard error.
 _IS_PRODUCTION = os.environ.get("AFRIGUARD_ENV", "development").lower() == "production"
 SECRET_KEY = os.environ.get("REVIEW_UI_SECRET_KEY", "")
+_PLACEHOLDER_SECRET_KEYS = {
+    "change-me",
+    "change-me-to-a-random-secret-in-production",
+}
 
-if not SECRET_KEY:
+if not SECRET_KEY or SECRET_KEY in _PLACEHOLDER_SECRET_KEYS:
     if _IS_PRODUCTION:
         raise RuntimeError(
-            "REVIEW_UI_SECRET_KEY environment variable is not set. "
+            "REVIEW_UI_SECRET_KEY environment variable is not set to a secure value. "
             "This is required in production. Set it to a random 32+ character string."
         )
     # Development/PoC only: use a deterministic but non-trivial fallback
@@ -170,7 +176,11 @@ async def login_page(request: Request):
     reviewer_id = get_current_reviewer(request)
     if reviewer_id:
         return RedirectResponse("/review")
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"error": None},
+    )
 
 
 @app.post("/login")
@@ -187,8 +197,9 @@ async def login(
 
     logger.warning("review_ui.login_failed", reviewer_id=reviewer_id)
     return templates.TemplateResponse(
-        "login.html",
-        {"request": request, "error": "Invalid credentials. Please try again."},
+        request=request,
+        name="login.html",
+        context={"error": "Invalid credentials. Please try again."},
         status_code=401,
     )
 
@@ -218,9 +229,9 @@ async def review_queue(
     )
 
     return templates.TemplateResponse(
-        "review.html",
-        {
-            "request": request,
+        request=request,
+        name="review.html",
+        context={
             "reviewer_id": reviewer_id,
             "tasks": [
                 {
@@ -311,8 +322,9 @@ async def escalated_queue(
 
     items = _ESCALATION.get_escalated_annotations(db)
     return templates.TemplateResponse(
-        "escalated.html",
-        {"request": request, "items": items, "reviewer_id": reviewer_id},
+        request=request,
+        name="escalated.html",
+        context={"items": items, "reviewer_id": reviewer_id},
     )
 
 
@@ -345,8 +357,9 @@ async def stats_page(
         stats[lang][decision] = count
 
     return templates.TemplateResponse(
-        "stats.html",
-        {"request": request, "stats": stats, "reviewer_id": reviewer_id},
+        request=request,
+        name="stats.html",
+        context={"stats": stats, "reviewer_id": reviewer_id},
     )
 
 

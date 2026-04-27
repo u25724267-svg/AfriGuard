@@ -26,6 +26,9 @@ from tenacity import (
     before_sleep_log,
 )
 
+from src.config.env import load_project_env
+
+load_project_env()
 logger = structlog.get_logger(__name__)
 
 _MODELS_PATH = Path(__file__).parent.parent.parent / "configs" / "models.yaml"

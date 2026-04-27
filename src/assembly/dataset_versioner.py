@@ -16,8 +16,10 @@ from pathlib import Path
 import structlog
 from sqlalchemy.orm import Session
 
+from src.config.env import load_project_env
 from src.storage.db import DatasetItemORM
 
+load_project_env()
 logger = structlog.get_logger(__name__)
 
 _DATA_DIR = Path(os.environ.get("DATA_DIR", "./data"))
