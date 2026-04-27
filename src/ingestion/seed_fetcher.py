@@ -74,6 +74,10 @@ class SeedFetcher:
         for source in self._sources:
             sid = source.get("id", "unknown")
 
+            if source.get("enabled", True) is False:
+                logger.info("seed_fetcher.source_disabled", source_id=sid)
+                continue
+
             # Filter by source ID if requested
             if source_ids and sid not in source_ids:
                 continue
@@ -87,9 +91,29 @@ class SeedFetcher:
             logger.info("seed_fetcher.fetching_source", source_id=sid)
 
             try:
-                records = self._fetch_source(source, max_samples=max_samples_per_source)
-                logger.info("seed_fetcher.source_done", source_id=sid, records=len(records))
-                results.append((source, records))
+                target_languages = [
+                    lang for lang in (languages or []) if lang in source_langs
+                ]
+                if target_languages:
+                    for lang in target_languages:
+                        source_for_language = dict(source)
+                        source_for_language["languages"] = [lang]
+                        records = self._fetch_source(
+                            source_for_language,
+                            max_samples=max_samples_per_source,
+                            language=lang,
+                        )
+                        logger.info(
+                            "seed_fetcher.source_done",
+                            source_id=sid,
+                            language=lang,
+                            records=len(records),
+                        )
+                        results.append((source_for_language, records))
+                else:
+                    records = self._fetch_source(source, max_samples=max_samples_per_source)
+                    logger.info("seed_fetcher.source_done", source_id=sid, records=len(records))
+                    results.append((source, records))
             except Exception as e:
                 logger.error("seed_fetcher.source_failed", source_id=sid, error=str(e))
                 # Non-fatal: continue with other sources
@@ -98,13 +122,22 @@ class SeedFetcher:
         return results
 
     def _fetch_source(
-        self, source: dict[str, Any], max_samples: int | None = None
+        self,
+        source: dict[str, Any],
+        max_samples: int | None = None,
+        language: str | None = None,
     ) -> list[dict[str, Any]]:
         source_type = source.get("type", "huggingface")
 
         if source_type == "huggingface":
+            hf_config = source.get("hf_config")
+            hf_config_by_language = source.get("hf_config_by_language", {})
+            if language and hf_config_by_language:
+                hf_config = hf_config_by_language.get(language, hf_config)
+
             return self._hf_adapter.fetch(
                 hf_path=source["hf_path"],
+                hf_config=hf_config,
                 split=source.get("hf_split", "train"),
                 text_column=source.get("text_column", "text"),
                 is_token_list=source.get("is_token_list", False),

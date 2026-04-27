@@ -8,6 +8,7 @@ import pytest
 from src.ingestion.seed_normalizer import SeedNormalizer
 from src.ingestion.seed_store import SeedStore
 from src.ingestion.adapters.local_adapter import LocalAdapter
+from src.ingestion.seed_fetcher import SeedFetcher
 
 
 def test_local_adapter_json(tmp_path):
@@ -129,3 +130,45 @@ def test_normalizer_expands_multilanguage_sources_with_hashes():
     assert {doc.language for doc in docs} == {"hausa", "yoruba", "shona"}
     assert len({doc.provenance_hash for doc in docs}) == 3
     assert all(re.fullmatch(r"[0-9a-f]{64}", doc.provenance_hash) for doc in docs)
+
+
+def test_seed_fetcher_uses_language_specific_hf_config(tmp_path, monkeypatch):
+    """Language-filtered fetches pass the matching HF config and narrow source languages."""
+    sources = tmp_path / "sources.yaml"
+    sources.write_text(
+        """
+sources:
+  - id: "multi_news"
+    type: "huggingface"
+    hf_path: "example/news"
+    hf_config_by_language:
+      shona: "sna"
+      hausa: "hau"
+    languages: ["shona", "hausa"]
+    harm_domains: ["H04"]
+    text_column: "text"
+  - id: "disabled_source"
+    enabled: false
+    type: "huggingface"
+    hf_path: "example/disabled"
+    languages: ["shona"]
+""",
+        encoding="utf-8",
+    )
+
+    calls = []
+
+    def fake_fetch(**kwargs):
+        calls.append(kwargs)
+        return [{"text": "Shona news text long enough to become a seed.", "metadata": {}}]
+
+    fetcher = SeedFetcher(sources_path=sources)
+    monkeypatch.setattr(fetcher._hf_adapter, "fetch", fake_fetch)
+
+    batches = fetcher.fetch_all(max_samples_per_source=10, languages=["shona"])
+
+    assert len(batches) == 1
+    source_config, records = batches[0]
+    assert source_config["languages"] == ["shona"]
+    assert records
+    assert calls[0]["hf_config"] == "sna"

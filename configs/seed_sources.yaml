@@ -56,6 +56,7 @@ sources:
   - id: "africahatesentiment"
     name: "Africa Hate Speech (Twitter)"
     description: "Hate speech dataset for African social media"
+    enabled: false
     type: "huggingface"
     hf_path: "strombergnlp/broad_twitter_corpus"
     hf_split: "train"
@@ -139,6 +140,7 @@ sources:
     description: "Shona news/context seed text for Zimbabwe-specific cultural grounding"
     type: "huggingface"
     hf_path: "masakhane/masakhanews"
+    hf_config: "sna"
     hf_split: "train"
     languages: ["shona"]
     harm_domains: ["H04", "H09", "context"]

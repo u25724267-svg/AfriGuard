@@ -89,7 +89,11 @@ def ingest_seeds(language, max_samples, source_ids):
         for source_config, records in batches:
             if not records:
                 continue
-            docs, skipped = normalizer.normalize(source_config, records)
+            docs, skipped = normalizer.normalize(
+                source_config,
+                records,
+                target_language=language,
+            )
             inserted, dup_skipped = store.save_batch(docs, session)
             total_inserted += inserted
             total_skipped += skipped + dup_skipped
@@ -599,4 +603,3 @@ def cost_report():
 
 if __name__ == "__main__":
     cli()
-

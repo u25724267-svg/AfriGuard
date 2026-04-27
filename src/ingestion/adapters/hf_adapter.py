@@ -26,6 +26,7 @@ class HFAdapter:
     def fetch(
         self,
         hf_path: str,
+        hf_config: str | None = None,
         split: str = "train",
         text_column: str = "text",
         is_token_list: bool = False,
@@ -38,6 +39,7 @@ class HFAdapter:
 
         Args:
             hf_path:         HuggingFace dataset path (e.g. 'masakhane/afrisenti')
+            hf_config:       Optional dataset config/name for multilingual datasets
             split:           Dataset split to use
             text_column:     Column containing the primary text
             is_token_list:   If True, join token lists into space-separated strings
@@ -56,17 +58,20 @@ class HFAdapter:
         logger.info(
             "hf_adapter.fetching",
             path=hf_path,
+            config=hf_config,
             split=split,
             max_samples=max_samples,
         )
 
         try:
-            load_kwargs: dict[str, Any] = {"split": split, "trust_remote_code": True}
+            load_kwargs: dict[str, Any] = {"split": split}
             if self.hf_token:
                 load_kwargs["token"] = self.hf_token
 
-            # Some multi-lingual datasets require a config name
-            ds = load_dataset(hf_path, **load_kwargs)
+            if hf_config:
+                ds = load_dataset(hf_path, hf_config, **load_kwargs)
+            else:
+                ds = load_dataset(hf_path, **load_kwargs)
         except Exception as e:
             logger.error("hf_adapter.load_failed", path=hf_path, error=str(e))
             raise
