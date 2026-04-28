@@ -1,11 +1,15 @@
 """
 AfriGuard — Review: TaskAssigner
 
-Assigns filtered candidate responses to the appropriate language researcher
-for human review. One researcher per language; tasks are queued by language.
+Builds review task queues from the *sampled* subset of candidates.
 
-Each task groups all candidates for a single prompt so the researcher can
-compare and rank them in one session.
+Only candidates marked ``sampled_for_review`` by the SampleSelector are
+shown to researchers. The full ``passed_filter`` pool is exported to the
+dataset automatically; the sample is reviewed to estimate quality and
+catch systematic problems rather than to gate every item.
+
+Each task groups all sampled candidates for a single prompt so the
+researcher can compare and rank them in one session.
 """
 
 from __future__ import annotations
@@ -13,7 +17,7 @@ from __future__ import annotations
 from typing import Any
 import structlog
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import func, select
 
 from src.storage.db import CandidateResponseORM, GeneratedPromptORM
 
@@ -76,7 +80,12 @@ class TaskAssigner:
         """
         Return pending review tasks for a given reviewer.
 
-        A task = one prompt + all its passed-filter candidates that have
+        Only shows candidates with status ``sampled_for_review`` — the
+        stratified subset selected by SampleSelector. Candidates that
+        passed the filter but were not sampled are exported automatically
+        without requiring manual review.
+
+        A task = one prompt + all its sampled candidates that have
         not yet been annotated.
         """
         # Find the language this reviewer covers
@@ -90,23 +99,21 @@ class TaskAssigner:
             logger.warning("task_assigner.unknown_reviewer", reviewer_id=reviewer_id)
             return []
 
-        # Query prompts with at least one passed-filter candidate, not yet reviewed
-        # Subquery: prompt_ids where at least one candidate has status=passed_filter
-        subq = (
-            session.query(CandidateResponseORM.prompt_id)
-            .filter(
+        # Only surface the sampled subset — not the full passed_filter pool
+        prompt_ids_with_pending_candidates = (
+            select(CandidateResponseORM.prompt_id)
+            .where(
                 CandidateResponseORM.language == language,
-                CandidateResponseORM.status == "passed_filter",
+                CandidateResponseORM.status == "sampled_for_review",
             )
             .distinct()
-            .subquery()
         )
 
         prompts = (
             session.query(GeneratedPromptORM)
             .filter(
                 GeneratedPromptORM.language == language,
-                GeneratedPromptORM.id.in_(subq),
+                GeneratedPromptORM.id.in_(prompt_ids_with_pending_candidates),
             )
             .limit(limit)
             .all()
@@ -118,7 +125,7 @@ class TaskAssigner:
                 session.query(CandidateResponseORM)
                 .filter(
                     CandidateResponseORM.prompt_id == prompt.id,
-                    CandidateResponseORM.status == "passed_filter",
+                    CandidateResponseORM.status == "sampled_for_review",
                 )
                 .all()
             )
@@ -152,6 +159,27 @@ class TaskAssigner:
             task_count=len(tasks),
         )
         return tasks
+
+    def count_pending_items(self, session: Session, reviewer_id: str) -> int:
+        """Count candidate-level review items remaining for a reviewer."""
+        language = None
+        for lang, rev in _LANGUAGE_REVIEWER_MAP.items():
+            if rev == reviewer_id:
+                language = lang
+                break
+
+        if not language:
+            return 0
+
+        return (
+            session.query(func.count(CandidateResponseORM.id))
+            .filter(
+                CandidateResponseORM.language == language,
+                CandidateResponseORM.status == "sampled_for_review",
+            )
+            .scalar()
+            or 0
+        )
 
     def get_escalated_tasks(self, session: Session) -> list[dict[str, Any]]:
         """Return all S4 items and flagged items pending senior review."""

@@ -60,6 +60,8 @@ class DatasetVersioner:
         Returns:
             Path to the release directory.
         """
+        from src.storage.db import CandidateResponseORM
+
         release_dir = _DATA_DIR / "releases" / version
         release_dir.mkdir(parents=True, exist_ok=True)
 
@@ -75,6 +77,34 @@ class DatasetVersioner:
             version=version,
             total_items=len(items),
         )
+
+        # Compute review coverage stats from candidate statuses
+        cand_query = session.query(CandidateResponseORM)
+        if language:
+            cand_query = cand_query.filter(CandidateResponseORM.language == language)
+
+        all_candidates = cand_query.all()
+        total_passed = sum(1 for c in all_candidates if c.status in (
+            "passed_filter", "sampled_for_review", "approved", "rejected", "flagged"
+        ))
+        total_sampled = sum(1 for c in all_candidates if c.status in (
+            "sampled_for_review", "approved", "rejected", "flagged"
+        ))
+        total_human_reviewed = sum(1 for c in all_candidates if c.status in (
+            "approved", "rejected", "flagged"
+        ))
+
+        review_stats = {
+            "total_passed_filter": total_passed,
+            "total_sampled_for_review": total_sampled,
+            "total_human_reviewed": total_human_reviewed,
+            "sample_coverage_pct": round(
+                100 * total_sampled / total_passed, 1
+            ) if total_passed else 0,
+            "review_completion_pct": round(
+                100 * total_human_reviewed / total_sampled, 1
+            ) if total_sampled else 0,
+        }
 
         # Group by (language, item_type)
         groups: dict[tuple[str, str], list[DatasetItemORM]] = {}
@@ -103,7 +133,7 @@ class DatasetVersioner:
                 self._write_jsonl(out_path, all_items)
 
         # Write dataset card
-        card = self._build_dataset_card(version, items, item_counts)
+        card = self._build_dataset_card(version, items, item_counts, review_stats)
         card_path = release_dir / "dataset_card.json"
         with open(card_path, "w", encoding="utf-8") as f:
             json.dump(card, f, ensure_ascii=False, indent=2)
@@ -113,6 +143,7 @@ class DatasetVersioner:
             version=version,
             release_dir=str(release_dir),
             total_items=len(items),
+            review_stats=review_stats,
         )
         return release_dir
 
@@ -152,6 +183,7 @@ class DatasetVersioner:
         version: str,
         items: list[DatasetItemORM],
         item_counts: dict[str, int],
+        review_stats: dict | None = None,
     ) -> dict:
         by_language: dict[str, int] = {}
         by_type: dict[str, int] = {}
@@ -167,6 +199,17 @@ class DatasetVersioner:
                 "culturally grounded prompts, Afrocentric seed data, and human review "
                 "by native-language researchers."
             ),
+            "review_methodology": (
+                "Human review is sample-based. A stratified subset of generated candidates "
+                "was reviewed by native-language researchers (one per language). "
+                "Items not in the reviewed sample were accepted based on automatic "
+                "filtering (language detection, quality scoring, deduplication) and "
+                "are marked human_reviewed=False in provenance. "
+                "Review samples were stratified across harm category, severity, and "
+                "response type, with borderline cases (near quality threshold) "
+                "prioritised. See review_stats below for coverage."
+            ),
+            "review_stats": review_stats or {},
             "languages": list(by_language.keys()),
             "harm_categories": [f"H0{i}" if i < 10 else f"H{i}" for i in range(1, 12)],
             "total_items": len(items),

@@ -220,6 +220,7 @@ async def review_queue(
         return RedirectResponse("/")
 
     tasks = _ASSIGNER.get_pending_tasks(session=db, reviewer_id=reviewer_id, limit=10)
+    pending_item_count = _ASSIGNER.count_pending_items(session=db, reviewer_id=reviewer_id)
 
     # Stats for this reviewer
     annotated_count = (
@@ -245,7 +246,8 @@ async def review_queue(
                 for t in tasks
             ],
             "annotated_count": annotated_count,
-            "pending_count": len(tasks),
+            "pending_count": pending_item_count,
+            "task_group_count": len(tasks),
         },
     )
 
@@ -297,7 +299,7 @@ async def submit_annotation(
         elif decision == "reject":
             candidate.status = "rejected"
         elif decision in ("flag", "escalate"):
-            candidate.status = "passed_filter"
+            candidate.status = "flagged"
 
     db.commit()
 

@@ -24,8 +24,10 @@ class CandidateStatus(str, Enum):
     FILTERED_QUALITY = "filtered_quality"
     FILTERED_SIMILARITY = "filtered_similarity"
     FILTERED_DUPLICATE = "filtered_duplicate"
+    SAMPLED_FOR_REVIEW = "sampled_for_review"
     APPROVED = "approved"
     REJECTED = "rejected"
+    FLAGGED = "flagged"
 
 
 class CandidateResponse(BaseModel):

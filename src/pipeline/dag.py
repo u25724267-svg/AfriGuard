@@ -1,4 +1,4 @@
-"""
+﻿"""
 AfriGuard — Pipeline: CLI DAG
 
 Entry point for all pipeline stages. Run stages independently or as a full pipeline.
@@ -370,7 +370,73 @@ def assign_review():
     for lang, count in rows:
         click.echo(f"  {lang}: {count} candidates")
 
-    click.secho("\n[OK] Review assignment complete. Start review UI with: afriguard review-ui", fg="green")
+    click.secho("\n[OK] Auto-escalation done. Run 'afriguard sample-for-review' next.", fg="green")
+
+# ---------------------------------------------------------------------------
+# sample-for-review
+# ---------------------------------------------------------------------------
+
+@cli.command("sample-for-review")
+@click.option("--language", "-l", default=None, help="Sample for this language only (all if not set)")
+@click.option("--n-per-language", "-n", default=50, show_default=True, help="Maximum candidates to surface per language")
+@click.option("--borderline-fraction", default=0.20, show_default=True, help="Fraction of quota from near-threshold borderline cases")
+@click.option("--run-id", default=None, help="Restrict sample to this pipeline run")
+@click.option("--seed", default=None, type=int, help="Random seed for reproducibility")
+def sample_for_review(language, n_per_language, borderline_fraction, run_id, seed):
+    """
+    Select a stratified sample of passed-filter candidates for human review.
+
+    Researchers review only this sample -- not the full dataset -- to estimate
+    quality, calibrate labels, and catch systematic problems. The rest of the
+    dataset is exported automatically with human_reviewed=False in provenance.
+
+    Sampling is stratified across harm category, severity, and response type
+    (safe/unsafe). A configurable fraction comes from borderline cases
+    (quality score near the filter threshold) to prioritise ambiguous items.
+    """
+    from src.storage.db import SessionLocal
+    from src.review.sample_selector import SampleSelector
+    import yaml
+    from pathlib import Path as _Path
+
+    config_path = _Path(__file__).parent.parent.parent / "configs" / "pipeline.yaml"
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    min_quality = float(os.environ.get(
+        "PIPELINE_MIN_QUALITY_SCORE",
+        config["pipeline"]["min_quality_score"]
+    ))
+    languages = [language] if language else None
+
+    selector = SampleSelector()
+    with SessionLocal() as session:
+        result = selector.select(
+            session=session,
+            n_per_language=n_per_language,
+            languages=languages,
+            borderline_fraction=borderline_fraction,
+            min_quality=min_quality,
+            run_id=run_id,
+            seed=seed,
+        )
+
+    d = result.to_dict()
+    click.echo("\n[##] Sample-for-review summary:")
+    click.echo(f"  Total eligible (passed filter): {result.total_eligible}")
+    click.echo(f"  Sampled for review:             {result.sampled}")
+    click.echo(f"  Review coverage:                {d['review_coverage_pct']}%")
+    click.echo(f"  Borderline cases:               {result.borderline_count}")
+    click.echo(f"  High-confidence cases:          {result.high_confidence_count}")
+    if result.by_language:
+        click.echo("\n  By language:")
+        for lang, count in sorted(result.by_language.items()):
+            click.echo(f"    {lang}: {count}")
+    if result.by_category:
+        click.echo("\n  By harm category:")
+        for cat, count in sorted(result.by_category.items()):
+            click.echo(f"    {cat}: {count}")
+    click.secho(f"\n[OK] {result.sampled} candidates marked for review. Start review UI with: afriguard review-ui", fg="green")
 
 
 # ---------------------------------------------------------------------------
@@ -548,6 +614,17 @@ def run_all(ctx, language, version, n_prompts, run_id, resume):
         lambda: ctx.invoke(filter_candidates, language=language, run_id=active_run_id),
     )
     invoke_resumable("assign_review", lambda: ctx.invoke(assign_review))
+    invoke_resumable(
+        "sample_for_review",
+        lambda: ctx.invoke(
+            sample_for_review,
+            language=language,
+            n_per_language=50,
+            borderline_fraction=0.20,
+            run_id=active_run_id,
+            seed=42,
+        ),
+    )
 
     with SessionLocal() as session:
         PipelineResumeTracker(session).mark_run_paused(
