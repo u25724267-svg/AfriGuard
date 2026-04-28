@@ -67,8 +67,8 @@ sources:
     notes: "Supplementary hate speech seeds"
 
   - id: "south_africa_legal_popia"
-    name: "POPIA Full Text (South Africa)"
-    description: "Protection of Personal Information Act — full text used as legal conditioning"
+    name: "POPIA Legal Summary (South Africa)"
+    description: "Protection of Personal Information Act — curated legal summary used as legal conditioning"
     type: "local"
     local_path: "data/seeds/legal/popia_2013.txt"
     fallback_url: "https://www.gov.za/sites/default/files/gcis_document/201409/3706726-11act4of2013protectionofpersonalinforcorrect.pdf"
@@ -76,11 +76,11 @@ sources:
     harm_domains: ["H03"]
     text_column: "text"
     license: "Government publication (public domain)"
-    notes: "Used as legal_context for H03 prompts in South African language variants"
+    notes: "Curated project summary used as legal_context for H03 prompts in South African language variants"
 
   - id: "nigeria_vapp_act"
-    name: "Nigeria Violence Against Persons Prohibition Act 2015"
-    description: "VAPP Act text — legal grounding for GBV prompts"
+    name: "Nigeria Violence Against Persons Prohibition Act 2015 Summary"
+    description: "VAPP Act curated legal summary — legal grounding for GBV prompts"
     type: "local"
     local_path: "data/seeds/legal/nigeria_vapp_2015.txt"
     fallback_url: "https://placng.org/i/wp-content/uploads/2019/12/Violence-Against-Persons-Prohibition-Act-2015.pdf"
@@ -91,8 +91,8 @@ sources:
     notes: "Legal conditioning for H02 Hausa and Yoruba generation"
 
   - id: "malawi_gender_equality_act"
-    name: "Malawi Gender Equality Act 2013"
-    description: "Gender equality and GBV legal text for Malawi"
+    name: "Malawi Gender Equality Act 2013 Summary"
+    description: "Gender equality and GBV curated legal summary for Malawi"
     type: "local"
     local_path: "data/seeds/legal/malawi_gender_equality_2013.txt"
     fallback_url: "https://www.sdnp.org.mw/index.php/resources/documents/legislation/gender/94-malawi-gender-equality-act/file"
@@ -102,8 +102,8 @@ sources:
     license: "Government publication (public domain)"
 
   - id: "sa_sexual_offences_act"
-    name: "South Africa Sexual Offences and Related Matters Amendment Act 32 of 2007"
-    description: "Sexual offences legal text for South African context"
+    name: "South Africa Sexual Offences and Related Matters Amendment Act 32 of 2007 Summary"
+    description: "Sexual offences curated legal summary for South African context"
     type: "local"
     local_path: "data/seeds/legal/sa_sexual_offences_2007.txt"
     fallback_url: ""

@@ -290,7 +290,7 @@ async def submit_annotation(
     db.add(ann)
 
     # Update candidate status based on decision
-    candidate = db.query(CandidateResponseORM).get(candidate_id)
+    candidate = db.get(CandidateResponseORM, candidate_id)
     if candidate:
         if decision == "approve":
             candidate.status = "approved"

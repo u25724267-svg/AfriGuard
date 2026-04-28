@@ -136,6 +136,10 @@ class GenerationJob:
             seed_context, seed_ids = "", []
 
         # --- Step 2: Build and version the system prompt ---
+        legal_context = self._builder.get_legal_context(
+            language=self.language,
+            harm_category=self.harm_category,
+        )
         system_prompt = self._builder.build_system_prompt(
             language=self.language,
             harm_category=self.harm_category,
@@ -209,7 +213,7 @@ class GenerationJob:
             prompt_template_version="1.0.0",
             prompt_template_hash=template_hash,
             seed_document_ids=seed_ids,
-            legal_context_used=None,
+            legal_context_used=legal_context,
             entities_injected=entities_injected,
             model_used=self.prompt_model_id,
             generation_params={"temperature": 0.9, "max_tokens": 256},

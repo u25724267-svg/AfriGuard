@@ -263,3 +263,7 @@ Generate ONLY the response text. No preamble. Between 30 and 300 words."""
         """Return a list of entity strings sampled for this language."""
         entities = self._entity_sampler.sample_all(language)
         return entities["names"] + entities["places"] + entities["organizations"]
+
+    def get_legal_context(self, language: str, harm_category: str) -> str:
+        """Return the legal context injected into prompts for provenance."""
+        return self._legal_grounder.get_legal_context(language, harm_category)

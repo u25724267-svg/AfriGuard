@@ -34,7 +34,11 @@ htmlcov/
 .ruff_cache/
 
 # Data (tracked by DVC — not git)
-/data/seeds/
+/data/seeds/*
+!/data/seeds/custom/
+!/data/seeds/custom/afriguard_lexicon.json
+!/data/seeds/legal/
+!/data/seeds/legal/*.txt
 /data/processed/
 /data/prompts/
 /data/candidates/

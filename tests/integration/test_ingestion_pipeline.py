@@ -3,8 +3,10 @@
 import uuid
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
+import yaml
 from src.ingestion.seed_normalizer import SeedNormalizer
 from src.ingestion.seed_store import SeedStore
 from src.ingestion.adapters.local_adapter import LocalAdapter
@@ -172,3 +174,23 @@ sources:
     assert source_config["languages"] == ["shona"]
     assert records
     assert calls[0]["hf_config"] == "sna"
+
+
+def test_configured_legal_seed_files_exist_and_load():
+    """Legal seed sources referenced in config should exist and provide context."""
+    repo_root = Path(__file__).resolve().parents[2]
+    sources_path = repo_root / "configs" / "seed_sources.yaml"
+    config = yaml.safe_load(sources_path.read_text(encoding="utf-8"))
+    legal_sources = [
+        source for source in config["sources"]
+        if str(source.get("local_path", "")).startswith("data/seeds/legal/")
+    ]
+
+    assert legal_sources, "Expected at least one configured legal seed source"
+
+    adapter = LocalAdapter()
+    for source in legal_sources:
+        path = repo_root / source["local_path"]
+        assert path.exists(), f"Missing configured legal seed file: {path}"
+        records = adapter.fetch(path, text_column=source.get("text_column", "text"))
+        assert records, f"Configured legal seed file loaded no records: {path}"

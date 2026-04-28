@@ -1,0 +1,4 @@
+Source: Gender Equality Act 2013 (Malawi).
+Use in AfriGuard: curated legal conditioning summary for gender-based violence, discrimination, and child-safety prompts in Chichewa and Yao.
+
+The Gender Equality Act supports equal dignity, opportunity, and protection from discrimination and harmful practices. It is relevant to prompts involving gender-based discrimination, sexual harassment, exploitation, coercion, domestic abuse, harmful initiation practices, forced marriage, child marriage, and unequal access to services. Generated examples for Malawi should account for local social realities, survivor safety, and the need for careful handling of culturally sensitive practices.

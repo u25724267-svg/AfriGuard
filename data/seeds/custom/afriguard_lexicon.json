@@ -1,0 +1,127 @@
+{
+  "hausa": {
+    "person_names": [
+      "Aminu", "Fatima", "Ibrahim", "Hauwa", "Musa", "Zainab",
+      "Abdullahi", "Aisha", "Garba", "Bilkisu", "Sani", "Ramatu",
+      "Yakubu", "Hafsat", "Usman", "Maryam", "Lawal", "Hasiya",
+      "Bashir", "Rabi", "Haruna", "Khadija", "Sule", "Falmata"
+    ],
+    "place_names": [
+      "Kano", "Kaduna", "Zaria", "Sokoto", "Katsina", "Daura",
+      "Zamfara", "Gusau", "Bauchi", "Maiduguri", "Gombe", "Dutse",
+      "Birnin Kebbi", "Hadejia", "Kazaure"
+    ],
+    "organizations": [
+      "Hisbah Board", "INEC Kano Office", "Arewa Consultative Forum",
+      "Dan Agundi Market Association", "Kano State Hospital",
+      "Bayero University Kano", "Kano Pillars FC"
+    ]
+  },
+  "yoruba": {
+    "person_names": [
+      "Adebayo", "Funmilayo", "Oluwaseun", "Bukola", "Taiwo",
+      "Kehinde", "Babatunde", "Omowunmi", "Rotimi", "Titilayo",
+      "Femi", "Shade", "Tunde", "Bisi", "Kola", "Sola",
+      "Adunola", "Oluwatobi", "Adewale", "Moyinoluwa"
+    ],
+    "place_names": [
+      "Lagos", "Ibadan", "Abeokuta", "Ogbomosho", "Ilorin",
+      "Oshogbo", "Ile-Ife", "Akure", "Ondo", "Oyo",
+      "Mushin", "Surulere", "Ikeja", "Victoria Island"
+    ],
+    "organizations": [
+      "Oodua Peoples Congress", "Afenifere", "Lagos Chamber of Commerce",
+      "LUTH", "University of Ibadan", "Lagos State University",
+      "Nigeria Bar Association Lagos Branch"
+    ]
+  },
+  "sepedi": {
+    "person_names": [
+      "Thabo", "Lerato", "Kgomotso", "Refilwe", "Sello",
+      "Dimakatso", "Mpho", "Kedibone", "Lesego", "Tshepiso",
+      "Mokoena", "Mashishi", "Nkosi", "Dlamini", "Molefe",
+      "Mmabatho", "Dikgang", "Boitumelo", "Tebogo", "Kefilwe"
+    ],
+    "place_names": [
+      "Polokwane", "Tzaneen", "Thohoyandou", "Mokopane",
+      "Bela-Bela", "Groblersdal", "Burgersfort", "Lephalale",
+      "Seshego", "Mankweng", "Lebowakgomo", "Louis Trichardt"
+    ],
+    "organizations": [
+      "Limpopo House of Traditional Leaders", "SADAG Limpopo",
+      "University of Limpopo", "Polokwane Municipality",
+      "Limpopo Department of Health", "SASSA Limpopo Office"
+    ]
+  },
+  "northern_sotho": {
+    "person_names": [
+      "Tšhepiso", "Mamatle", "Lehlohonolo", "Kelebogile",
+      "Motshidisi", "Phuti", "Tshepo", "Matlhodi", "Nthabiseng",
+      "Kagiso", "Dineo", "Teboho", "Lindiwe", "Nomvula", "Sifiso"
+    ],
+    "place_names": [
+      "Polokwane", "Seshego", "Mankweng", "Lebowakgomo",
+      "Marble Hall", "Giyani", "Bushbuckridge", "Mokopane",
+      "Jane Furse", "Marble Hall"
+    ],
+    "organizations": [
+      "University of Limpopo", "Limpopo Department of Education",
+      "Greater Tzaneen Municipality", "SAPS Limpopo",
+      "Capricorn District Municipality"
+    ]
+  },
+  "chichewa": {
+    "person_names": [
+      "Chimwemwe", "Tadala", "Kondwani", "Thandeka", "Mphatso",
+      "Chisomo", "Limbani", "Thandiwe", "Yankho", "Naomi",
+      "Bright", "Stella", "Gift", "Mercy", "Precious",
+      "Dalitso", "Chifundo", "Wongani", "Takondwa", "Yamikani"
+    ],
+    "place_names": [
+      "Lilongwe", "Blantyre", "Mzuzu", "Zomba", "Mangochi",
+      "Kasungu", "Salima", "Dedza", "Ntchisi", "Ntcheu",
+      "Mchinji", "Balaka", "Nkhotakota", "Rumphi"
+    ],
+    "organizations": [
+      "Malawi Human Rights Commission", "MACOHA",
+      "Chancellor College UNIMA", "Bunda College",
+      "Malawi Electoral Commission", "Legal Aid Bureau Malawi",
+      "Queen Elizabeth Central Hospital"
+    ]
+  },
+  "yao": {
+    "person_names": [
+      "Alimu", "Fatuma", "Hamisi", "Mariam", "Saidi",
+      "Zainabu", "Juma", "Hadija", "Rashidi", "Mwanajuma",
+      "Atupele", "Maulidi", "Zuwena", "Nassoro", "Kulthumu",
+      "Idrisi", "Salmini", "Rehema", "Bakari", "Subira"
+    ],
+    "place_names": [
+      "Mangochi", "Machinga", "Balaka", "Zomba", "Chiradzulu",
+      "Phalombe", "Thyolo", "Mulanje", "Fort Johnston",
+      "Monkey Bay", "Namwera"
+    ],
+    "organizations": [
+      "Islamic Information Bureau Malawi", "Muslim Association of Malawi",
+      "Mangochi District Council", "Mangochi District Hospital",
+      "Yao Cultural Association"
+    ]
+  },
+  "shona": {
+    "person_names": [
+      "Tendai", "Rudo", "Tawanda", "Nyasha", "Kudzai", "Farai",
+      "Tatenda", "Chipo", "Munyaradzi", "Vimbai", "Simbarashe", "Memory",
+      "Blessing", "Munashe", "Tafadzwa", "Tsitsi", "Tinashe", "Chiedza"
+    ],
+    "place_names": [
+      "Harare", "Chitungwiza", "Mutare", "Masvingo", "Gweru", "Bindura",
+      "Marondera", "Murewa", "Chinhoyi", "Rusape", "Buhera", "Mbare",
+      "Highfield", "Kuwadzana", "Epworth"
+    ],
+    "organizations": [
+      "Zimbabwe Electoral Commission", "Legal Resources Foundation",
+      "Musasa Project", "Zimbabwe Republic Police Victim Friendly Unit",
+      "Harare City Council", "University of Zimbabwe", "Friendship Bench"
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+Source: Violence Against Persons (Prohibition) Act 2015 (Nigeria).
+Use in AfriGuard: curated legal conditioning summary for gender-based violence and sexual-offence prompts in Hausa and Yoruba.
+
+The VAPP Act prohibits multiple forms of violence against persons, including rape, domestic violence, harmful widowhood practices, emotional abuse, intimidation, coercion, stalking, and other forms of physical or sexual abuse. It is relevant for prompts involving sexual coercion, threats, intimate-partner violence, victim blaming, grooming, harassment, forced marriage, and normalisation of gender-based violence. Generated examples should reflect realistic Nigerian social contexts while avoiding sensationalism.

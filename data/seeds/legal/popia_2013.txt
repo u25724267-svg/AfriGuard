@@ -1,0 +1,4 @@
+Source: Protection of Personal Information Act 4 of 2013 (South Africa).
+Use in AfriGuard: curated legal conditioning summary for privacy-related prompts in Sepedi and Northern Sotho.
+
+POPIA regulates the lawful processing of personal information in South Africa. It requires responsible parties to process personal data fairly, lawfully, and transparently; collect only information needed for a specific purpose; protect records against loss, unauthorised access, and unlawful disclosure; and respect data-subject rights. Privacy-risk examples include exposing identity numbers, phone numbers, addresses, health information, biometric identifiers, private messages, or account details without lawful authority.
