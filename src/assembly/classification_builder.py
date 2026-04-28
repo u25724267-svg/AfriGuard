@@ -71,29 +71,43 @@ class ClassificationBuilder:
 
         if classify_prompts:
             # Classify the prompt itself
-            item = DatasetItemORM(
-                id=str(uuid.uuid4()),
-                item_type="classification",
-                language=prompt.language,
-                language_code=prompt.language_code,
-                harm_category=prompt.harm_category,
-                harm_category_name=prompt.harm_category_name,
-                severity=prompt.severity,
-                prompt_id=prompt.id,
-                prompt_text=prompt.prompt_text,
-                classification_text=prompt.prompt_text,
-                harm_label=prompt.harm_category,
-                severity_label=prompt.severity,
-                seed_document_ids=prompt.seed_document_ids or [],
-                prompt_template_id=prompt.prompt_template_id,
-                annotator_ids=[],
-                models_used=[prompt.model_used],
-                dataset_version=dataset_version,
-                run_id=run_id,
-                created_at=datetime.now(tz=timezone.utc),
+            existing = (
+                session.query(DatasetItemORM)
+                .filter(
+                    DatasetItemORM.dataset_version == dataset_version,
+                    DatasetItemORM.item_type == "classification",
+                    DatasetItemORM.prompt_id == prompt.id,
+                    DatasetItemORM.response_id.is_(None),
+                    DatasetItemORM.classification_text == prompt.prompt_text,
+                    DatasetItemORM.harm_label == prompt.harm_category,
+                    DatasetItemORM.severity_label == prompt.severity,
+                )
+                .first()
             )
-            session.add(item)
-            created += 1
+            if not existing:
+                item = DatasetItemORM(
+                    id=str(uuid.uuid4()),
+                    item_type="classification",
+                    language=prompt.language,
+                    language_code=prompt.language_code,
+                    harm_category=prompt.harm_category,
+                    harm_category_name=prompt.harm_category_name,
+                    severity=prompt.severity,
+                    prompt_id=prompt.id,
+                    prompt_text=prompt.prompt_text,
+                    classification_text=prompt.prompt_text,
+                    harm_label=prompt.harm_category,
+                    severity_label=prompt.severity,
+                    seed_document_ids=prompt.seed_document_ids or [],
+                    prompt_template_id=prompt.prompt_template_id,
+                    annotator_ids=[],
+                    models_used=[prompt.model_used],
+                    dataset_version=dataset_version,
+                    run_id=run_id,
+                    created_at=datetime.now(tz=timezone.utc),
+                )
+                session.add(item)
+                created += 1
 
         if classify_responses:
             candidates = (
@@ -113,6 +127,20 @@ class ClassificationBuilder:
 
                 harm_label = (ann.harm_label or prompt.harm_category)
                 severity_label = (ann.severity_label or prompt.severity)
+                existing = (
+                    session.query(DatasetItemORM)
+                    .filter(
+                        DatasetItemORM.dataset_version == dataset_version,
+                        DatasetItemORM.item_type == "classification",
+                        DatasetItemORM.prompt_id == prompt.id,
+                        DatasetItemORM.response_id == cand.id,
+                        DatasetItemORM.harm_label == harm_label,
+                        DatasetItemORM.severity_label == severity_label,
+                    )
+                    .first()
+                )
+                if existing:
+                    continue
 
                 item = DatasetItemORM(
                     id=str(uuid.uuid4()),
@@ -124,6 +152,7 @@ class ClassificationBuilder:
                     severity=prompt.severity,
                     prompt_id=prompt.id,
                     prompt_text=prompt.prompt_text,
+                    response_id=cand.id,
                     classification_text=cand.response_text,
                     harm_label=harm_label,
                     severity_label=severity_label,

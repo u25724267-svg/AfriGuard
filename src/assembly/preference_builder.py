@@ -129,6 +129,20 @@ class PreferenceBuilder:
             for ann in annotations.values()
         })
 
+        existing = (
+            session.query(DatasetItemORM)
+            .filter(
+                DatasetItemORM.dataset_version == dataset_version,
+                DatasetItemORM.item_type == "preference_pair",
+                DatasetItemORM.prompt_id == prompt.id,
+                DatasetItemORM.chosen_response_id == chosen.id,
+                DatasetItemORM.rejected_response_id == rejected_cand.id,
+            )
+            .first()
+        )
+        if existing:
+            return 0
+
         item = DatasetItemORM(
             id=str(uuid.uuid4()),
             item_type="preference_pair",

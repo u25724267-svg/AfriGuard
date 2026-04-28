@@ -71,6 +71,18 @@ class QABuilder:
                 continue
 
             item_type = f"qa_{cand.response_type}"  # qa_safe or qa_unsafe
+            existing = (
+                session.query(DatasetItemORM)
+                .filter(
+                    DatasetItemORM.dataset_version == dataset_version,
+                    DatasetItemORM.item_type == item_type,
+                    DatasetItemORM.prompt_id == prompt.id,
+                    DatasetItemORM.response_id == cand.id,
+                )
+                .first()
+            )
+            if existing:
+                continue
 
             item = DatasetItemORM(
                 id=str(uuid.uuid4()),

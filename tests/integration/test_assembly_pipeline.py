@@ -1,5 +1,6 @@
 """Integration test — Assembly pipeline (preference, QA, classification)"""
 
+import json
 import uuid
 from datetime import datetime, timezone
 
@@ -87,6 +88,28 @@ def test_preference_and_qa_assembly(db_session):
     assert len(items) >= 3
 
 
+def test_assembly_is_idempotent_for_same_version(db_session):
+    _seed_prompt_and_candidates(db_session)
+
+    first_pref = PreferenceBuilder().build(db_session, "0.1.0", "first-run")
+    first_qa = QABuilder().build(db_session, "0.1.0", "first-run")
+    first_cls = ClassificationBuilder().build(db_session, "0.1.0", "first-run")
+    first_count = db_session.query(DatasetItemORM).count()
+
+    second_pref = PreferenceBuilder().build(db_session, "0.1.0", "second-run")
+    second_qa = QABuilder().build(db_session, "0.1.0", "second-run")
+    second_cls = ClassificationBuilder().build(db_session, "0.1.0", "second-run")
+    second_count = db_session.query(DatasetItemORM).count()
+
+    assert first_pref >= 1
+    assert first_qa >= 1
+    assert first_cls >= 1
+    assert second_pref == 0
+    assert second_qa == 0
+    assert second_cls == 0
+    assert second_count == first_count
+
+
 def test_dataset_export(db_session, tmp_path):
     """Test that export writes JSONL files."""
     import os
@@ -101,12 +124,74 @@ def test_dataset_export(db_session, tmp_path):
 
     assert release_dir.exists()
     assert (release_dir / "hausa").exists()
+    assert (release_dir / "hausa" / "pku_style" / "prompts.jsonl").exists()
+    assert (release_dir / "hausa" / "pku_style" / "qa_pairs.jsonl").exists()
+    assert (release_dir / "hausa" / "pku_style" / "preference_pairs.jsonl").exists()
+    assert (release_dir / "all_languages" / "pku_style" / "prompts.jsonl").exists()
+    assert (release_dir / "all_languages" / "pku_style" / "qa_pairs.jsonl").exists()
+    assert (release_dir / "all_languages" / "pku_style" / "preference_pairs.jsonl").exists()
     # At least one JSONL file should exist
     jsonl_files = list(release_dir.rglob("*.jsonl"))
     assert len(jsonl_files) > 0
 
+    qa_records = [
+        json.loads(line)
+        for line in (release_dir / "hausa" / "pku_style" / "qa_pairs.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    pref_records = [
+        json.loads(line)
+        for line in (release_dir / "hausa" / "pku_style" / "preference_pairs.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert qa_records[0]["prompt"]
+    assert "is_safe" in qa_records[0]
+    assert pref_records[0]["better_response_id"] == 0
+    assert pref_records[0]["safer_response_id"] == 0
+
     # Check dataset card
-    import json
     card = json.loads((release_dir / "dataset_card.json").read_text())
     assert card["version"] == "0.1.0"
     assert card["total_items"] >= 1
+    assert "pku_style_outputs" in card
+
+
+def test_export_deduplicates_existing_duplicate_dataset_rows(db_session, tmp_path):
+    """Export should stay clean even if old duplicate assembled rows exist."""
+    import os
+    os.environ["DATA_DIR"] = str(tmp_path)
+
+    _seed_prompt_and_candidates(db_session)
+    PreferenceBuilder().build(db_session, "0.1.0", "test-run")
+    QABuilder().build(db_session, "0.1.0", "test-run")
+
+    original = db_session.query(DatasetItemORM).filter_by(item_type="qa_safe").first()
+    duplicate = DatasetItemORM(
+        id=str(uuid.uuid4()),
+        item_type=original.item_type,
+        language=original.language,
+        language_code=original.language_code,
+        harm_category=original.harm_category,
+        harm_category_name=original.harm_category_name,
+        severity=original.severity,
+        prompt_id=original.prompt_id,
+        prompt_text=original.prompt_text,
+        response_id=original.response_id,
+        response_text=original.response_text,
+        seed_document_ids=original.seed_document_ids,
+        prompt_template_id=original.prompt_template_id,
+        annotator_ids=original.annotator_ids,
+        models_used=original.models_used,
+        dataset_version=original.dataset_version,
+        run_id="duplicate-run",
+        created_at=datetime.now(tz=timezone.utc),
+    )
+    db_session.add(duplicate)
+    db_session.commit()
+
+    release_dir = DatasetVersioner().export(db_session, "0.1.0")
+    qa_records = [
+        json.loads(line)
+        for line in (release_dir / "hausa" / "pku_style" / "qa_pairs.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+
+    keys = [(record["prompt_id"], record["response_id"], record["is_safe"]) for record in qa_records]
+    assert len(keys) == len(set(keys))
