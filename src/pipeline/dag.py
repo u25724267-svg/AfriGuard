@@ -588,8 +588,16 @@ def review_ui(host, port, auto_port):
         )
         raise click.Abort()
 
-    click.secho(f"[WEB] Starting review UI at http://{_host}:{_port}", fg="cyan")
+    browser_url = _review_ui_browser_url(_host, _port)
+    click.secho(f"[WEB] Starting review UI on {_host}:{_port}", fg="cyan")
+    click.secho(f"[WEB] Open this in your browser: {browser_url}", fg="green")
     uvicorn.run(app, host=_host, port=_port)
+
+
+def _review_ui_browser_url(host: str, port: int) -> str:
+    """Return a browser-friendly URL for the configured bind host."""
+    browser_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
+    return f"http://{browser_host}:{port}"
 
 
 def _port_available(host: str, port: int) -> bool:

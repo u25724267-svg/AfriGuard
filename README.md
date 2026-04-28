@@ -48,7 +48,7 @@ afriguard assign-review
 
 # 8. Start review UI (each researcher logs in with their language)
 afriguard review-ui
-# Open http://localhost:8000
+# Open http://127.0.0.1:8000
 # If port 8000 is busy:
 afriguard review-ui --auto-port
 
@@ -67,6 +67,8 @@ Do not put secrets in `venv/.env`; if you already created that file, move those 
 Existing shell, CI, or Docker environment variables take precedence over `.env` values, so local files cannot silently override deployed secrets.
 
 For the review UI, set `REVIEW_UI_SECRET_KEY` to a random 32+ character value and set each `PASS_*` reviewer password before sharing the URL. Leaving them blank is allowed for local proof-of-concept work, but AfriGuard will warn you and use temporary/default development values.
+
+For local development, use `REVIEW_UI_HOST=127.0.0.1`. `0.0.0.0` means "listen on all network interfaces" and is not the browser URL; if you bind to `0.0.0.0`, open `http://127.0.0.1:<port>` locally.
 
 ### Smoke Test
 
