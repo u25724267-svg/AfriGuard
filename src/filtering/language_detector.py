@@ -9,6 +9,10 @@ where both libraries perform poorly.
 
 from __future__ import annotations
 
+import json
+import re
+import unicodedata
+
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -24,8 +28,83 @@ _LANG_CODE_MAP = {
     "shona": {"sn", "sna"},
 }
 
+# Human-readable names that LLMs commonly return for the same target language.
+# Sepedi is especially important here: many tools identify it as Northern Sotho
+# or Sesotho sa Leboa, and rejecting those aliases wipes out valid candidates.
+_LANG_NAME_ALIASES = {
+    "hausa": {"hausa", "ha", "hau"},
+    "yoruba": {"yoruba", "yo", "yor"},
+    "sepedi": {
+        "sepedi",
+        "northern sotho",
+        "sesotho sa leboa",
+        "sotho northern",
+        "sotho, northern",
+        "nso",
+        "sep",
+    },
+    "northern_sotho": {
+        "northern sotho",
+        "sepedi",
+        "sesotho sa leboa",
+        "sotho northern",
+        "sotho, northern",
+        "nso",
+        "sep",
+    },
+    "chichewa": {"chichewa", "chewa", "nyanja", "chinyanja", "ny", "nya"},
+    "yao": {"yao", "chiyao", "ciyao", "chiyawo", "yao language"},
+    "shona": {"shona", "chishona", "chi shona", "sn", "sna"},
+}
+
 # Languages with poor library support — use LLM check
 _LOW_RESOURCE_FALLBACK = {"yao", "sepedi", "northern_sotho", "shona"}
+
+
+def _normalize_language_label(label: str | None) -> str:
+    if not label:
+        return ""
+    normalized = unicodedata.normalize("NFKD", str(label)).encode("ascii", "ignore").decode()
+    normalized = normalized.lower().replace("_", " ").replace("-", " ")
+    normalized = re.sub(r"[^a-z0-9,\s]", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    return normalized
+
+
+def _language_label_matches(detected: str | None, expected_language: str, expected_codes: set[str]) -> bool:
+    detected_norm = _normalize_language_label(detected)
+    expected_norm = _normalize_language_label(expected_language)
+    expected_aliases = {
+        _normalize_language_label(alias)
+        for alias in _LANG_NAME_ALIASES.get(expected_language.lower(), {expected_language})
+    }
+    expected_aliases.update(_normalize_language_label(code) for code in expected_codes)
+    expected_aliases.add(expected_norm)
+
+    if detected_norm in expected_aliases:
+        return True
+
+    # Accept descriptive labels such as "Sepedi (Northern Sotho)" or
+    # "Northern Sotho / Sesotho sa Leboa" without accepting very short
+    # accidental substring matches like "ha" inside another word.
+    descriptive_aliases = {alias for alias in expected_aliases if len(alias) >= 4}
+    return any(alias in detected_norm or detected_norm in alias for alias in descriptive_aliases)
+
+
+def _parse_llm_language_json(text: str) -> dict:
+    """Parse strict JSON, fenced JSON, or a JSON object embedded in text."""
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
+        if not match:
+            raise
+        return json.loads(match.group(0))
 
 
 class LanguageDetectionResult:
@@ -160,6 +239,7 @@ class LanguageDetector:
     def _try_llm(self, text: str, expected_language: str) -> LanguageDetectionResult:
         """Use LLM to verify language for low-resource languages."""
         try:
+            expected_codes = _LANG_CODE_MAP.get(expected_language.lower(), set())
             system = (
                 "You are a language identification expert specializing in African languages. "
                 "Answer with ONLY a JSON object: {\"language\": \"<detected_language>\", \"confidence\": <0.0-1.0>}"
@@ -172,13 +252,21 @@ class LanguageDetector:
                 temperature=0.0,
                 max_tokens=50,
             )
-            import json
-            result = json.loads(resp.text)
-            detected = result.get("language", "unknown").lower()
+            result = _parse_llm_language_json(resp.text)
+            detected = (
+                result.get("language")
+                or result.get("detected_language")
+                or result.get("language_name")
+                or "unknown"
+            )
             conf = float(result.get("confidence", 0.5))
-            is_match = detected == expected_language.lower() or expected_language.lower() in detected
+            is_match = _language_label_matches(detected, expected_language, expected_codes)
             adjusted = conf if is_match else conf * 0.1
-            return LanguageDetectionResult(detected=detected, confidence=adjusted, method="llm")
+            return LanguageDetectionResult(
+                detected=_normalize_language_label(detected) or "unknown",
+                confidence=adjusted,
+                method="llm",
+            )
         except Exception as e:
             logger.warning("language_detector.llm_fallback_failed", error=str(e))
             return LanguageDetectionResult(detected=expected_language, confidence=0.4, method="heuristic")

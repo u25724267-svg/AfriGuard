@@ -219,7 +219,12 @@ def generate(language, category, severity, n_prompts, model, run_id, dry_run):
 @cli.command("filter")
 @click.option("--language", "-l", default=None, help="Filter candidates for this language only")
 @click.option("--run-id", default=None, help="Filter only candidates from this run")
-def filter_candidates(language, run_id):
+@click.option(
+    "--retry-language-fail",
+    is_flag=True,
+    help="Re-filter candidates that previously failed language detection",
+)
+def filter_candidates(language, run_id, retry_language_fail):
     """Run language detection, quality scoring, similarity filtering, and deduplication."""
     from src.storage.db import SessionLocal, CandidateResponseORM, GeneratedPromptORM
     from src.filtering.language_detector import LanguageDetector
@@ -258,8 +263,12 @@ def filter_candidates(language, run_id):
     stats = {"language_fail": 0, "quality_fail": 0, "similarity_fail": 0, "dup_fail": 0, "passed": 0}
 
     with SessionLocal() as session:
+        candidate_statuses = ["raw"]
+        if retry_language_fail:
+            candidate_statuses.append("filtered_language")
+
         query = session.query(CandidateResponseORM).filter(
-            CandidateResponseORM.status == "raw"
+            CandidateResponseORM.status.in_(candidate_statuses)
         )
         if language:
             query = query.filter(CandidateResponseORM.language == language)
@@ -267,7 +276,8 @@ def filter_candidates(language, run_id):
             query = query.filter(CandidateResponseORM.run_id == run_id)
 
         candidates = query.all()
-        click.echo(f"[?] Filtering {len(candidates)} raw candidates…")
+        status_label = "raw + language-failed" if retry_language_fail else "raw"
+        click.echo(f"[?] Filtering {len(candidates)} {status_label} candidates…")
 
         # Group by prompt_id for within-prompt similarity filtering
         by_prompt: dict[str, list[CandidateResponseORM]] = {}
@@ -611,7 +621,12 @@ def run_all(ctx, language, version, n_prompts, run_id, resume):
     )
     invoke_resumable(
         "filter",
-        lambda: ctx.invoke(filter_candidates, language=language, run_id=active_run_id),
+        lambda: ctx.invoke(
+            filter_candidates,
+            language=language,
+            run_id=active_run_id,
+            retry_language_fail=False,
+        ),
     )
     invoke_resumable("assign_review", lambda: ctx.invoke(assign_review))
     invoke_resumable(
