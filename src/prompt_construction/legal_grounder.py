@@ -7,6 +7,7 @@ to include as legal conditioning in prompt system messages.
 
 from __future__ import annotations
 
+from src.config.languages import get_legal_countries
 from src.taxonomy.harm_registry import HarmRegistry, get_registry
 
 # Language → country mapping for legal relevance
@@ -201,9 +202,16 @@ class LegalGrounder:
 
         Falls back to generic research context if no specific law is found.
         """
-        country = _LANG_COUNTRY.get(language.lower(), "")
+        try:
+            countries = get_legal_countries(language) if language else []
+        except KeyError:
+            countries = []
         category_laws = _LEGAL_SUMMARIES.get(harm_category, {})
-        legal_text = category_laws.get(country, "")
+        legal_text = ""
+        for country in countries:
+            legal_text = category_laws.get(country, "")
+            if legal_text:
+                break
 
         if not legal_text:
             # Try registry references

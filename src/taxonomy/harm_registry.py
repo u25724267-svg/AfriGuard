@@ -14,6 +14,8 @@ from typing import Any
 import yaml
 import structlog
 
+from src.config.languages import get_legal_countries
+
 logger = structlog.get_logger(__name__)
 
 _DEFAULT_TAXONOMY_PATH = Path(__file__).parent.parent.parent / "configs" / "harm_taxonomy.yaml"
@@ -113,17 +115,10 @@ class HarmRegistry:
     def get_legal_references(self, category_id: str, language: str) -> list[str]:
         """Return formatted legal references relevant to a language."""
         cat = self.get_category(category_id)
-        # Map languages to countries
-        lang_country_map = {
-            "hausa": ["Nigeria"],
-            "yoruba": ["Nigeria"],
-            "sepedi": ["South Africa"],
-            "northern_sotho": ["South Africa"],
-            "chichewa": ["Malawi"],
-            "yao": ["Malawi"],
-            "shona": ["Zimbabwe"],
-        }
-        relevant_countries = lang_country_map.get(language.lower(), [])
+        try:
+            relevant_countries = get_legal_countries(language)
+        except KeyError:
+            relevant_countries = []
         refs = []
         for ref in cat.legal_references:
             if not relevant_countries or ref.get("country") in relevant_countries:

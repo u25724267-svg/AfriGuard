@@ -10,6 +10,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
+from src.config.languages import is_supported_language, list_language_names
+
 
 class SeedDocument(BaseModel):
     """A single seed document ingested from an Afrocentric corpus."""
@@ -52,16 +54,8 @@ class SeedDocument(BaseModel):
     @field_validator("language")
     @classmethod
     def validate_language(cls, v: str) -> str:
-        allowed = {
-            "hausa",
-            "sepedi",
-            "chichewa",
-            "northern_sotho",
-            "yao",
-            "yoruba",
-            "shona",
-        }
-        if v not in allowed:
+        if not is_supported_language(v):
+            allowed = set(list_language_names())
             raise ValueError(f"Language '{v}' not in supported set: {allowed}")
         return v
 

@@ -25,6 +25,7 @@ import structlog
 from src.taxonomy.harm_registry import HarmRegistry, get_registry
 from src.taxonomy.entity_sampler import EntitySampler
 from src.prompt_construction.legal_grounder import LegalGrounder
+from src.config.languages import get_language_config
 
 logger = structlog.get_logger(__name__)
 
@@ -181,10 +182,10 @@ class PromptBuilder:
         """
         cat = self._registry.get_category(harm_category)
 
-        lang_instruction = _LANG_INSTRUCTIONS.get(
-            language.lower(),
-            f"Write the user prompt ENTIRELY in {language}. Do NOT use English.",
-        )
+        try:
+            lang_instruction = get_language_config(language).prompt_instruction
+        except KeyError:
+            lang_instruction = f"Write the user prompt ENTIRELY in {language}. Do NOT use English."
         severity_frame = _SEVERITY_FRAMES.get(severity, _SEVERITY_FRAMES["S2"])
         legal_context = self._legal_grounder.get_legal_context(language, harm_category)
         cultural_notes = self._registry.get_cultural_notes(harm_category, language)
@@ -227,10 +228,10 @@ class PromptBuilder:
         cat = self._registry.get_category(harm_category)
         legal_context = self._legal_grounder.get_legal_context(language, harm_category)
 
-        lang_instruction = _LANG_INSTRUCTIONS.get(
-            language.lower(),
-            f"Respond ENTIRELY in {language}. Do NOT use English.",
-        )
+        try:
+            lang_instruction = get_language_config(language).response_instruction
+        except KeyError:
+            lang_instruction = f"Respond ENTIRELY in {language}. Do NOT use English."
 
         if response_type == "safe":
             role_instruction = (

@@ -32,6 +32,7 @@ from src.prompt_construction.prompt_version_store import PromptVersionStore
 from src.prompt_construction.seed_context_injector import SeedContextInjector
 from src.storage.db import GeneratedPromptORM, CandidateResponseORM
 from src.taxonomy.harm_registry import get_registry
+from src.config.languages import get_language_code
 
 logger = structlog.get_logger(__name__)
 
@@ -303,9 +304,7 @@ class GenerationJob:
 
     @staticmethod
     def _get_lang_code(language: str) -> str:
-        mapping = {
-            "hausa": "ha", "yoruba": "yo", "sepedi": "sep",
-            "northern_sotho": "nso", "chichewa": "ny", "yao": "yao",
-            "shona": "sn",
-        }
-        return mapping.get(language.lower(), "xx")
+        try:
+            return get_language_code(language)
+        except KeyError:
+            return "xx"

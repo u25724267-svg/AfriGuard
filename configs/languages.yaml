@@ -1,0 +1,165 @@
+version: "1.0.0"
+description: >
+  Central registry for languages supported by AfriGuard. To add a language,
+  add one entry here, add seed sources in configs/seed_sources.yaml, add
+  cultural entities in data/seeds/custom/afriguard_lexicon.json, and add the
+  reviewer password variable to .env.
+
+languages:
+  - name: "hausa"
+    display_name: "Hausa"
+    code: "ha"
+    iso_639_3: "hau"
+    region: "Nigeria / Niger / West Africa"
+    countries: ["Nigeria"]
+    reviewer_id: "reviewer_hausa"
+    password_env: "PASS_HAUSA"
+    default_password: "hausa_review_poc"
+    flag: "NG"
+    low_resource_detection: false
+    char_ngram_similarity: false
+    aliases: ["hausa", "ha", "hau"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Hausa (Harshen Hausa). Do NOT use
+      English. Use authentic Hausa vocabulary and phrasing as spoken in
+      northern Nigeria.
+    response_instruction: >
+      Respond ENTIRELY in Hausa (Harshen Hausa). Do NOT use English. Use
+      authentic Hausa vocabulary and phrasing as spoken in northern Nigeria.
+
+  - name: "sepedi"
+    display_name: "Sepedi"
+    code: "sep"
+    iso_639_3: "nso"
+    region: "South Africa (Limpopo)"
+    countries: ["South Africa"]
+    reviewer_id: "reviewer_sepedi"
+    password_env: "PASS_SEPEDI"
+    default_password: "sepedi_review_poc"
+    flag: "ZA"
+    low_resource_detection: true
+    char_ngram_similarity: false
+    aliases:
+      - "sepedi"
+      - "northern sotho"
+      - "sesotho sa leboa"
+      - "sotho northern"
+      - "sotho, northern"
+      - "nso"
+      - "sep"
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Sepedi (Sesotho sa Leboa). Do NOT use
+      English. Use authentic Sepedi vocabulary and phrasing as spoken in Limpopo
+      Province, South Africa.
+    response_instruction: >
+      Respond ENTIRELY in Sepedi (Sesotho sa Leboa). Do NOT use English. Use
+      authentic Sepedi vocabulary and phrasing as spoken in Limpopo Province,
+      South Africa.
+
+  - name: "chichewa"
+    display_name: "Chichewa"
+    code: "ny"
+    iso_639_3: "nya"
+    region: "Malawi / Zambia / Mozambique"
+    countries: ["Malawi"]
+    reviewer_id: "reviewer_chichewa"
+    password_env: "PASS_CHICHEWA"
+    default_password: "chichewa_review_poc"
+    flag: "MW"
+    low_resource_detection: false
+    char_ngram_similarity: false
+    aliases: ["chichewa", "chewa", "nyanja", "chinyanja", "ny", "nya"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Chichewa (Nyanja). Do NOT use English.
+      Use authentic Chichewa vocabulary and phrasing as spoken in Malawi.
+    response_instruction: >
+      Respond ENTIRELY in Chichewa (Nyanja). Do NOT use English. Use authentic
+      Chichewa vocabulary and phrasing as spoken in Malawi.
+
+  - name: "northern_sotho"
+    display_name: "Northern Sotho"
+    code: "nso"
+    iso_639_3: "nso"
+    region: "South Africa (Limpopo)"
+    countries: ["South Africa"]
+    reviewer_id: "reviewer_northern_sotho"
+    password_env: "PASS_NORTHERN_SOTHO"
+    default_password: "nsotho_review_poc"
+    flag: "ZA"
+    low_resource_detection: true
+    char_ngram_similarity: false
+    aliases:
+      - "northern sotho"
+      - "sepedi"
+      - "sesotho sa leboa"
+      - "sotho northern"
+      - "sotho, northern"
+      - "nso"
+      - "sep"
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Northern Sotho (Sesotho sa Leboa). Do
+      NOT use English. Use vocabulary and phrasing as spoken in Limpopo, South
+      Africa.
+    response_instruction: >
+      Respond ENTIRELY in Northern Sotho (Sesotho sa Leboa). Do NOT use English.
+      Use vocabulary and phrasing as spoken in Limpopo, South Africa.
+
+  - name: "yao"
+    display_name: "Yao"
+    code: "yao"
+    iso_639_3: "yao"
+    region: "Malawi / Tanzania / Mozambique"
+    countries: ["Malawi"]
+    reviewer_id: "reviewer_yao"
+    password_env: "PASS_YAO"
+    default_password: "yao_review_poc"
+    flag: "MW"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["yao", "chiyao", "ciyao", "chiyawo", "yao language"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Yao (Chiyao). Do NOT use English. Use
+      authentic Yao vocabulary and phrasing as spoken in southern Malawi.
+    response_instruction: >
+      Respond ENTIRELY in Yao (Chiyao). Do NOT use English. Use authentic Yao
+      vocabulary and phrasing as spoken in southern Malawi.
+
+  - name: "yoruba"
+    display_name: "Yoruba"
+    code: "yo"
+    iso_639_3: "yor"
+    region: "Nigeria / Benin / Togo"
+    countries: ["Nigeria"]
+    reviewer_id: "reviewer_yoruba"
+    password_env: "PASS_YORUBA"
+    default_password: "yoruba_review_poc"
+    flag: "NG"
+    low_resource_detection: false
+    char_ngram_similarity: false
+    aliases: ["yoruba", "yo", "yor"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Yoruba. Do NOT use English. Use
+      authentic Yoruba vocabulary and phrasing as used in southwestern Nigeria.
+    response_instruction: >
+      Respond ENTIRELY in Yoruba. Do NOT use English. Use authentic Yoruba
+      vocabulary and phrasing as used in southwestern Nigeria.
+
+  - name: "shona"
+    display_name: "Shona"
+    code: "sn"
+    iso_639_3: "sna"
+    region: "Zimbabwe / Mozambique / Southern Africa"
+    countries: ["Zimbabwe"]
+    reviewer_id: "reviewer_shona"
+    password_env: "PASS_SHONA"
+    default_password: "shona_review_poc"
+    flag: "ZW"
+    low_resource_detection: true
+    char_ngram_similarity: false
+    aliases: ["shona", "chishona", "chi shona", "sn", "sna"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Shona (chiShona). Do NOT use English.
+      Use authentic Shona vocabulary and phrasing as spoken in Zimbabwe.
+    response_instruction: >
+      Respond ENTIRELY in Shona (chiShona). Do NOT use English. Use authentic
+      Shona vocabulary and phrasing as spoken in Zimbabwe.

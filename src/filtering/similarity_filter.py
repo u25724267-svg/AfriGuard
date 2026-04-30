@@ -16,13 +16,15 @@ from __future__ import annotations
 import structlog
 import numpy as np
 
+from src.config.languages import get_char_ngram_similarity_languages
+
 logger = structlog.get_logger(__name__)
 
 _DEFAULT_MODEL = "paraphrase-multilingual-mpnet-base-v2"
 _DEFAULT_THRESHOLD = 0.85
 
 # Languages not well-supported by the embedding model — use character n-gram fallback
-_CHAR_NGRAM_FALLBACK = {"yao"}
+_CHAR_NGRAM_FALLBACK = get_char_ngram_similarity_languages()
 
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:

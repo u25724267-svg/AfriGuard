@@ -15,50 +15,24 @@ import unicodedata
 
 import structlog
 
+from src.config.languages import (
+    get_language_aliases_map,
+    get_language_codes_map,
+    get_low_resource_languages,
+)
+
 logger = structlog.get_logger(__name__)
 
 # Map AfriGuard language names to ISO codes that langdetect/langid may recognize
-_LANG_CODE_MAP = {
-    "hausa": {"ha", "hau"},
-    "yoruba": {"yo", "yor"},
-    "sepedi": {"nso", "sep"},
-    "northern_sotho": {"nso"},
-    "chichewa": {"ny", "nya"},
-    "yao": {"yao"},  # poorly supported — use LLM fallback
-    "shona": {"sn", "sna"},
-}
+_LANG_CODE_MAP = get_language_codes_map()
 
 # Human-readable names that LLMs commonly return for the same target language.
 # Sepedi is especially important here: many tools identify it as Northern Sotho
 # or Sesotho sa Leboa, and rejecting those aliases wipes out valid candidates.
-_LANG_NAME_ALIASES = {
-    "hausa": {"hausa", "ha", "hau"},
-    "yoruba": {"yoruba", "yo", "yor"},
-    "sepedi": {
-        "sepedi",
-        "northern sotho",
-        "sesotho sa leboa",
-        "sotho northern",
-        "sotho, northern",
-        "nso",
-        "sep",
-    },
-    "northern_sotho": {
-        "northern sotho",
-        "sepedi",
-        "sesotho sa leboa",
-        "sotho northern",
-        "sotho, northern",
-        "nso",
-        "sep",
-    },
-    "chichewa": {"chichewa", "chewa", "nyanja", "chinyanja", "ny", "nya"},
-    "yao": {"yao", "chiyao", "ciyao", "chiyawo", "yao language"},
-    "shona": {"shona", "chishona", "chi shona", "sn", "sna"},
-}
+_LANG_NAME_ALIASES = get_language_aliases_map()
 
 # Languages with poor library support — use LLM check
-_LOW_RESOURCE_FALLBACK = {"yao", "sepedi", "northern_sotho", "shona"}
+_LOW_RESOURCE_FALLBACK = get_low_resource_languages()
 
 
 def _normalize_language_label(label: str | None) -> str:

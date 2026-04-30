@@ -36,6 +36,7 @@ from src.storage.db import (
 from src.review.task_assigner import TaskAssigner
 from src.review.escalation_queue import EscalationQueue
 from src.config.env import load_project_env
+from src.config.languages import get_reviewer_accounts, get_reviewer_language
 from src.observability.logging_config import configure_logging
 
 import structlog
@@ -93,15 +94,10 @@ templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 def _load_reviewer_passwords() -> dict[str, str]:
     """Load reviewer passwords from environment variables."""
     password_env_map = {
-        "reviewer_hausa":          ("PASS_HAUSA",          "hausa_review_poc"),
-        "reviewer_sepedi":         ("PASS_SEPEDI",         "sepedi_review_poc"),
-        "reviewer_chichewa":       ("PASS_CHICHEWA",       "chichewa_review_poc"),
-        "reviewer_northern_sotho": ("PASS_NORTHERN_SOTHO", "nsotho_review_poc"),
-        "reviewer_yao":            ("PASS_YAO",            "yao_review_poc"),
-        "reviewer_yoruba":         ("PASS_YORUBA",         "yoruba_review_poc"),
-        "reviewer_shona":          ("PASS_SHONA",          "shona_review_poc"),
-        "admin":                   ("PASS_ADMIN",          "admin_afriguard_poc"),
+        account["reviewer_id"]: (account["password_env"], account["default_password"])
+        for account in get_reviewer_accounts()
     }
+    password_env_map["admin"] = ("PASS_ADMIN", "admin_afriguard_poc")
 
     passwords: dict[str, str] = {}
     missing_in_prod: list[str] = []
@@ -132,6 +128,7 @@ def _load_reviewer_passwords() -> dict[str, str]:
 
 
 _REVIEWER_PASSWORDS = _load_reviewer_passwords()
+_REVIEWER_OPTIONS = get_reviewer_accounts()
 
 _ASSIGNER = TaskAssigner()
 _ESCALATION = EscalationQueue()
@@ -179,7 +176,7 @@ async def login_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"error": None},
+        context={"error": None, "reviewer_options": _REVIEWER_OPTIONS},
     )
 
 
@@ -199,7 +196,10 @@ async def login(
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"error": "Invalid credentials. Please try again."},
+        context={
+            "error": "Invalid credentials. Please try again.",
+            "reviewer_options": _REVIEWER_OPTIONS,
+        },
         status_code=401,
     )
 
@@ -375,14 +375,6 @@ def _hash_reviewer(reviewer_id: str) -> str:
 
 
 def _reviewer_language(reviewer_id: str) -> str:
-    mapping = {
-        "reviewer_hausa": "hausa",
-        "reviewer_sepedi": "sepedi",
-        "reviewer_chichewa": "chichewa",
-        "reviewer_northern_sotho": "northern_sotho",
-        "reviewer_yao": "yao",
-        "reviewer_yoruba": "yoruba",
-        "reviewer_shona": "shona",
-        "admin": "all",
-    }
-    return mapping.get(reviewer_id, "unknown")
+    if reviewer_id == "admin":
+        return "all"
+    return get_reviewer_language(reviewer_id) or "unknown"

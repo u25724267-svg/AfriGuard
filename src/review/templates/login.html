@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AfriGuard — Login</title>
+  <title>AfriGuard - Login</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -65,40 +65,35 @@
       margin-bottom: 20px;
       font-size: 0.875rem;
     }
-    .flag { font-size: 1.5rem; margin-right: 8px; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="logo">
-      <h1>🛡️ AfriGuard</h1>
+      <h1>AfriGuard</h1>
       <p>Safety Alignment Review Portal</p>
     </div>
 
     {% if error %}
-    <div class="error">⚠️ {{ error }}</div>
+    <div class="error">{{ error }}</div>
     {% endif %}
 
     <form method="POST" action="/login">
       <div class="form-group">
         <label for="reviewer_id">Reviewer Account</label>
         <select name="reviewer_id" id="reviewer_id" required>
-          <option value="">— Select your language —</option>
-          <option value="reviewer_hausa">🇳🇬 Hausa Reviewer</option>
-          <option value="reviewer_yoruba">🇳🇬 Yoruba Reviewer</option>
-          <option value="reviewer_sepedi">🇿🇦 Sepedi Reviewer</option>
-          <option value="reviewer_northern_sotho">🇿🇦 Northern Sotho Reviewer</option>
-          <option value="reviewer_chichewa">🇲🇼 Chichewa Reviewer</option>
-          <option value="reviewer_yao">🇲🇼 Yao Reviewer</option>
-          <option value="reviewer_shona">🇿🇼 Shona Reviewer</option>
-          <option value="admin">🔐 Administrator</option>
+          <option value="">Select your language</option>
+          {% for option in reviewer_options %}
+          <option value="{{ option.reviewer_id }}">{{ option.flag }} {{ option.display_name }} Reviewer</option>
+          {% endfor %}
+          <option value="admin">Admin Administrator</option>
         </select>
       </div>
       <div class="form-group">
         <label for="password">Password</label>
         <input type="password" name="password" id="password" placeholder="Enter your review password" required>
       </div>
-      <button type="submit" class="btn">Sign In →</button>
+      <button type="submit" class="btn">Sign In</button>
     </form>
   </div>
 </body>

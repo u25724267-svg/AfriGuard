@@ -19,21 +19,13 @@ import structlog
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
 
+from src.config.languages import get_language_reviewer_map
 from src.storage.db import CandidateResponseORM, GeneratedPromptORM
 
 logger = structlog.get_logger(__name__)
 
-# Maps language name to reviewer login ID
-# These correspond to the reviewer_id values in pipeline.yaml
-_LANGUAGE_REVIEWER_MAP = {
-    "hausa": "reviewer_hausa",
-    "sepedi": "reviewer_sepedi",
-    "chichewa": "reviewer_chichewa",
-    "northern_sotho": "reviewer_northern_sotho",
-    "yao": "reviewer_yao",
-    "yoruba": "reviewer_yoruba",
-    "shona": "reviewer_shona",
-}
+# Maps language name to reviewer login ID from configs/languages.yaml.
+_LANGUAGE_REVIEWER_MAP = get_language_reviewer_map()
 
 
 class ReviewTask:

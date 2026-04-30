@@ -45,6 +45,7 @@ from typing import Any
 import structlog
 from sqlalchemy.orm import Session
 
+from src.config.languages import list_language_names
 from src.storage.db import CandidateResponseORM
 
 logger = structlog.get_logger(__name__)
@@ -55,9 +56,7 @@ _DEFAULT_BORDERLINE_FRACTION = 0.20   # 20% of quota from near-threshold cases
 _DEFAULT_BORDERLINE_MARGIN = 0.15     # quality_score within this above min_quality
 _DEFAULT_MIN_QUALITY = 0.60           # should match pipeline.yaml min_quality_score
 
-_ALL_LANGUAGES = [
-    "hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba", "shona"
-]
+_ALL_LANGUAGES = list_language_names()
 
 
 class SampleResult:

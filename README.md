@@ -174,6 +174,24 @@ afriguard resume-status       Show autoresume checkpoint status
 afriguard cost-report         Show API cost breakdown
 ```
 
+## Adding Languages
+
+AfriGuard keeps language-specific runtime metadata in `configs/languages.yaml`.
+To add another language, add one entry there with:
+
+- `name`, `display_name`, `code`, and `iso_639_3`
+- `countries` for legal grounding
+- `reviewer_id`, `password_env`, and `default_password`
+- language aliases for filtering and LLM language checks
+- prompt and response language instructions
+- low-resource detection flags, if needed
+
+Then add matching seed sources in `configs/seed_sources.yaml`, cultural names and
+places in `data/seeds/custom/afriguard_lexicon.json`, a `PASS_*` value in `.env`,
+and an annotation guideline file for the reviewer. Most runtime behavior now reads
+from `configs/languages.yaml`, so adding a language no longer requires editing
+prompt construction, filtering, generation, or review-assignment code.
+
 ## Autoresume
 
 `afriguard run-all` writes durable checkpoints to the database for each stage:
@@ -209,7 +227,8 @@ pytest --cov=src --cov-report=term-missing
 
 | File | Purpose |
 |------|---------|
-| `configs/pipeline.yaml` | Languages, batch sizes, severity distribution |
+| `configs/pipeline.yaml` | Batch sizes, active harm categories, severity distribution |
+| `configs/languages.yaml` | Central language metadata, reviewer IDs, aliases, legal countries, language instructions |
 | `configs/harm_taxonomy.yaml` | Full harm taxonomy with legal references |
 | `configs/seed_sources.yaml` | Seed dataset registry |
 | `configs/models.yaml` | LLM model configs and costs |

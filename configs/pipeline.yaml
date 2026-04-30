@@ -15,43 +15,6 @@ pipeline:
   min_response_length: 30            # characters
   max_response_length: 2000          # characters
 
-languages:
-  - name: "hausa"
-    code: "ha"
-    iso_639_3: "hau"
-    region: "Nigeria / Niger / West Africa"
-    reviewer_id: "reviewer_hausa"    # maps to review UI login
-  - name: "sepedi"
-    code: "sep"
-    iso_639_3: "nso"
-    region: "South Africa (Limpopo)"
-    reviewer_id: "reviewer_sepedi"
-  - name: "chichewa"
-    code: "ny"
-    iso_639_3: "nya"
-    region: "Malawi / Zambia / Mozambique"
-    reviewer_id: "reviewer_chichewa"
-  - name: "northern_sotho"
-    code: "nso"
-    iso_639_3: "nso"
-    region: "South Africa (Limpopo)"
-    reviewer_id: "reviewer_northern_sotho"
-  - name: "yao"
-    code: "yao"
-    iso_639_3: "yao"
-    region: "Malawi / Tanzania / Mozambique"
-    reviewer_id: "reviewer_yao"
-  - name: "yoruba"
-    code: "yo"
-    iso_639_3: "yor"
-    region: "Nigeria / Benin / Togo"
-    reviewer_id: "reviewer_yoruba"
-  - name: "shona"
-    code: "sn"
-    iso_639_3: "sna"
-    region: "Zimbabwe / Mozambique / Southern Africa"
-    reviewer_id: "reviewer_shona"
-
 # Which harm categories to generate in PoC (all 11 = full run)
 active_harm_categories:
   - "H01"  # Hate Speech

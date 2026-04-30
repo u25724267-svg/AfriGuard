@@ -131,13 +131,14 @@ def generate(language, category, severity, n_prompts, model, run_id, dry_run):
     """Generate prompts and candidate responses using LLM."""
     import yaml
     from pathlib import Path
+    from src.config.languages import list_language_names
 
     config_path = Path(__file__).parent.parent.parent / "configs" / "pipeline.yaml"
     with open(config_path) as f:
         config = yaml.safe_load(f)
 
     model_id = model or os.environ.get("PIPELINE_DEFAULT_MODEL", "gpt-4o")
-    languages = [language] if language else [l["name"] for l in config["languages"]]
+    languages = [language] if language else list_language_names()
     categories = [category] if category else config["active_harm_categories"]
     severities = [severity] if severity else ["S1", "S2", "S3", "S4"]
 

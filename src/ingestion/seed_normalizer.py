@@ -15,6 +15,7 @@ from typing import Any
 
 import structlog
 
+from src.config.languages import get_language_code
 from src.schemas.seed import SeedDocument
 
 logger = structlog.get_logger(__name__)
@@ -74,13 +75,6 @@ class SeedNormalizer:
         else:
             languages = source_config.get("languages", ["unknown"])
 
-        # Build language_code lookup (simplified)
-        lang_code_map = {
-            "hausa": "ha", "yoruba": "yo", "sepedi": "sep",
-            "northern_sotho": "nso", "chichewa": "ny", "yao": "yao",
-            "shona": "sn",
-        }
-
         documents: list[SeedDocument] = []
         skipped = 0
 
@@ -107,7 +101,10 @@ class SeedNormalizer:
             # The provenance_hash includes the language to keep records unique.
             now = datetime.now(tz=timezone.utc)
             for lang in languages:
-                lang_code = lang_code_map.get(lang, "xx")
+                try:
+                    lang_code = get_language_code(lang)
+                except KeyError:
+                    lang_code = "xx"
                 try:
                     doc = SeedDocument(
                         id=str(uuid.uuid4()),
