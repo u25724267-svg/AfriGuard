@@ -176,6 +176,32 @@ sources:
     assert calls[0]["hf_config"] == "sna"
 
 
+def test_configured_seed_source_ids_are_unique():
+    """The production seed registry should not contain duplicate source IDs."""
+    repo_root = Path(__file__).resolve().parents[2]
+    sources_path = repo_root / "configs" / "seed_sources.yaml"
+    config = yaml.safe_load(sources_path.read_text(encoding="utf-8"))
+    source_ids = [source["id"] for source in config["sources"]]
+
+    assert len(source_ids) == len(set(source_ids))
+
+
+def test_vukuzenzele_sepedi_source_is_configured():
+    """Sepedi should have a high-volume government/context seed source."""
+    repo_root = Path(__file__).resolve().parents[2]
+    sources_path = repo_root / "configs" / "seed_sources.yaml"
+    config = yaml.safe_load(sources_path.read_text(encoding="utf-8"))
+    sources = {source["id"]: source for source in config["sources"]}
+
+    vukuzenzele = sources["vukuzenzele_sepedi"]
+    assert vukuzenzele["type"] == "huggingface"
+    assert vukuzenzele["hf_path"] == "dsfsi/vukuzenzele-monolingual"
+    assert vukuzenzele["hf_config"] == "nso"
+    assert vukuzenzele["text_column"] == "text"
+    assert "sepedi" in vukuzenzele["languages"]
+    assert {"H02", "H03", "H04", "context"}.issubset(set(vukuzenzele["harm_domains"]))
+
+
 def test_configured_legal_seed_files_exist_and_load():
     """Legal seed sources referenced in config should exist and provide context."""
     repo_root = Path(__file__).resolve().parents[2]

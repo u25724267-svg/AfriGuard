@@ -18,7 +18,7 @@ sources:
 
   - id: "masakhaner2"
     name: "MasakhaNER 2.0"
-    description: "Named entity recognition dataset for African languages — used for cultural entity injection"
+    description: "Named entity recognition dataset for African languages; used for cultural entity injection"
     type: "huggingface"
     hf_path: "masakhane/masakhaner2"
     hf_split: "train"
@@ -31,7 +31,7 @@ sources:
 
   - id: "masakhanews"
     name: "MasakhaNEWS"
-    description: "African news classification dataset — provides real-world news context"
+    description: "African news classification dataset; provides real-world news context"
     type: "huggingface"
     hf_path: "masakhane/masakhanews"
     hf_split: "train"
@@ -68,7 +68,7 @@ sources:
 
   - id: "south_africa_legal_popia"
     name: "POPIA Legal Summary (South Africa)"
-    description: "Protection of Personal Information Act — curated legal summary used as legal conditioning"
+    description: "Protection of Personal Information Act; curated legal summary used as legal conditioning"
     type: "local"
     local_path: "data/seeds/legal/popia_2013.txt"
     fallback_url: "https://www.gov.za/sites/default/files/gcis_document/201409/3706726-11act4of2013protectionofpersonalinforcorrect.pdf"
@@ -80,7 +80,7 @@ sources:
 
   - id: "nigeria_vapp_act"
     name: "Nigeria Violence Against Persons Prohibition Act 2015 Summary"
-    description: "VAPP Act curated legal summary — legal grounding for GBV prompts"
+    description: "VAPP Act curated legal summary; legal grounding for GBV prompts"
     type: "local"
     local_path: "data/seeds/legal/nigeria_vapp_2015.txt"
     fallback_url: "https://placng.org/i/wp-content/uploads/2019/12/Violence-Against-Persons-Prohibition-Act-2015.pdf"
@@ -112,46 +112,23 @@ sources:
     text_column: "text"
     license: "Government publication (public domain)"
 
-  - id: "yoruba_news_corpus"
-    name: "Yorùbá News Corpus"
-    description: "Yoruba news text for cultural context seeding"
+  - id: "vukuzenzele_sepedi"
+    name: "Vuk'uzenzele Sepedi Government Context"
+    description: >
+      South African government magazine articles in Sepedi/Northern Sotho for
+      public services, citizen rights, safety, health, privacy, and civic context.
     type: "huggingface"
-    hf_path: "castorini/yoruba_news"
+    hf_path: "dsfsi/vukuzenzele-monolingual"
+    hf_config: "nso"
     hf_split: "train"
-    languages: ["yoruba"]
-    harm_domains: ["H04", "context"]
-    text_column: "article"
-    license: "CC BY 4.0"
-
-  - id: "hausa_voa"
-    name: "Hausa VOA News"
-    description: "Hausa Voice of America news articles for cultural context"
-    type: "huggingface"
-    hf_path: "HausaNLP/HausaVOA-NER"
-    hf_split: "train"
-    languages: ["hausa"]
-    harm_domains: ["H04", "H09", "context"]
-    text_column: "tokens"
-    is_token_list: true
-    license: "CC BY 4.0"
-
-  - id: "shona_news_context"
-    name: "Shona News Context"
-    description: "Shona news/context seed text for Zimbabwe-specific cultural grounding"
-    type: "huggingface"
-    hf_path: "masakhane/masakhanews"
-    hf_config: "sna"
-    hf_split: "train"
-    type: "local"
-    local_path: "data/seeds/legal/sa_sexual_offences_2007.txt"
-    fallback_url: ""
-    languages: ["sepedi", "northern_sotho"]
-    harm_domains: ["H02"]
+    languages: ["sepedi"]
+    harm_domains: ["H02", "H03", "H04", "H06", "H08", "context"]
     text_column: "text"
-    license: "Government publication (public domain)"
+    license: "CC BY 4.0"
+    notes: "High-priority Sepedi context source for South African public-sector and safety scenarios"
 
   - id: "yoruba_news_corpus"
-    name: "Yorùbá News Corpus"
+    name: "Yoruba News Corpus"
     description: "Yoruba news text for cultural context seeding"
     type: "huggingface"
     hf_path: "castorini/yoruba_news"
@@ -197,36 +174,12 @@ sources:
     license: "AfriGuard (MIT)"
     notes: "Created by research team. Used for entity injection in all prompts."
 
-  # ---------------------------------------------------------------------------
-  # Sepedi / Northern Sotho — harm-relevant additions
-  # ---------------------------------------------------------------------------
-
-  - id: "vukuzenzele_sepedi"
-    name: "Vuk'uzenzele Government Magazine (Sepedi / Northern Sotho)"
-    description: >
-      South African government magazine covering citizen rights, GBV policy,
-      public health, data privacy, and government services. Published in all
-      11 official languages — filter to NSO for Sepedi/Northern Sotho.
-    type: "huggingface"
-    hf_path: "dsfsi/vukuzenzele-nlp"
-    hf_split: "train"
-    languages: ["sepedi", "northern_sotho"]
-    harm_domains: ["H02", "H03", "H04", "H08"]
-    text_column: "text"
-    license: "CC BY 4.0"
-    notes: >
-      DSFSI-produced dataset — highest quality Sepedi government/legal seed
-      available. Filter rows where language == 'nso'. Covers GBV policy (H02),
-      data privacy law (H03), government communications (H04), and public
-      health messaging (H08).
-
   - id: "za_mafoko_dsac"
     name: "za-mafoko DSAC Terminology (Sepedi)"
     description: >
-      Official multilingual terminologies from the Department of Sports, Arts
+      Official multilingual terminologies from the Department of Sport, Arts
       and Culture. Includes Sepedi institutional names, governance vocabulary,
-      and formal terminology across domains including health, education,
-      technology, and public administration.
+      and formal terminology.
     type: "huggingface"
     hf_path: "dsfsi/za-mafoko-dsac"
     hf_split: "train"
@@ -234,11 +187,7 @@ sources:
     harm_domains: ["entities"]
     text_column: "nso"
     license: "CC BY 4.0"
-    notes: >
-      Terminology glossary (word/phrase level, not full sentences). Used for
-      entity injection — provides authentic Sepedi institutional names and
-      government body vocabulary. Each row has translations across all 11
-      SA languages; extract the 'nso' column.
+    notes: "Phrase-level terminology. A future text_template adapter should combine source and target terms before large-scale ingestion."
 
   - id: "za_mafoko_statssa"
     name: "za-mafoko StatsSA Terminology (Sepedi)"
@@ -252,9 +201,7 @@ sources:
     harm_domains: ["entities"]
     text_column: "nso"
     license: "CC BY 4.0"
-    notes: >
-      StatsSA terminology — useful for financial/economic entity injection
-      (H05 context). Phrase-level entries; extract 'nso' column.
+    notes: "Phrase-level terminology useful for financial/economic entity injection."
 
   - id: "za_mafoko_up_glossary"
     name: "za-mafoko University of Pretoria Glossary (Sepedi)"
@@ -268,58 +215,42 @@ sources:
     harm_domains: ["entities"]
     text_column: "nso"
     license: "CC BY 4.0"
-    notes: >
-      Academic institutional vocabulary. Phrase-level entries; extract 'nso'
-      column. Supplements za_mafoko_dsac with academic/research domain terms.
+    notes: "Phrase-level academic and institutional vocabulary."
 
   - id: "nchlt_text_sepedi"
     name: "NCHLT Sepedi Text Corpus (SADiLaR)"
     description: >
       Sepedi text crawled from South African gov.za websites between 2007 and
-      2011. Covers formal policy documents, legal terminology, and state
-      protocols — highest quality formal Sepedi available.
+      2011. Covers formal policy documents, legal terminology, and state protocols.
     enabled: false
     type: "local"
     local_path: "data/seeds/sepedi/nchlt_sepedi.txt"
     languages: ["sepedi", "northern_sotho"]
     harm_domains: ["H03", "H04"]
     text_column: "text"
-    license: "Research use — check SADiLaR terms before redistribution"
-    notes: >
-      MANUAL DOWNLOAD REQUIRED. Visit https://hdl.handle.net/20.500.12185/330
-      to download from SADiLaR portal. Extract text, place at local_path, then
-      set enabled: true. Best source for POPIA-context (H03) and electoral
-      disinformation grounding (H04) in formal Sepedi register.
+    license: "Research use; check SADiLaR terms before redistribution"
+    notes: "Manual download required. Convert into JSONL segments before large-scale ingestion."
 
   - id: "sepedi_emotion_corpus"
     name: "Sepedi Emotional Speech Corpus (University of Limpopo)"
     description: >
-      Sepedi text with emotion labels (anger, fear, disgust, sadness,
-      happiness, neutral). Sourced from prompted speech and local Sepedi TV
-      broadcast dramas. Critical for H01 and H07 generation in Sepedi.
+      Sepedi text with emotion labels such as anger, fear, disgust, sadness,
+      happiness, and neutral.
     enabled: false
     type: "local"
     local_path: "data/seeds/sepedi/sepedi_emotion.txt"
     languages: ["sepedi"]
     harm_domains: ["H01", "H07"]
     text_column: "text"
-    license: "Academic use — contact University of Limpopo"
-    notes: >
-      NOT publicly available on HuggingFace. Submit academic data request to
-      the University of Limpopo NLP research group. Once obtained, place
-      extracted text transcripts at local_path and set enabled: true.
-      This is the only Sepedi-specific H01/H07 seed currently identified.
-
-  # ---------------------------------------------------------------------------
-  # Chichewa — harm-relevant addition
-  # ---------------------------------------------------------------------------
+    license: "Academic use; contact data owner"
+    notes: "Manual data request required before use."
 
   - id: "chichewa_sentiments"
     name: "Chichewa Sentiments Corpus"
     description: >
-      Community-contributed Chichewa sentiment text with positive/negative
-      labels. The closest publicly available proxy for emotionally charged
-      and hostile language in Chichewa.
+      Community-contributed Chichewa sentiment text with positive/negative labels.
+      The closest publicly available proxy for emotionally charged and hostile
+      language in Chichewa.
     type: "huggingface"
     hf_path: "michsethowusu/chichewa-sentiments-corpus"
     hf_split: "train"
@@ -327,9 +258,4 @@ sources:
     harm_domains: ["H01", "H07"]
     text_column: "text"
     license: "CC BY 4.0"
-    notes: >
-      Sentiment proxy for H01 (hostile/discriminatory language) and H07
-      (emotional distress/manipulation). Not hate speech per se, but negative
-      sentiment text gives the LLM culturally authentic expressions of hostility
-      and distress. Verify language quality with the Chichewa researcher before
-      scaling.
+    notes: "Sentiment proxy for H01 and H07. Verify language quality with the Chichewa researcher before scaling."
