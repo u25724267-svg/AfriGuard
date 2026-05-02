@@ -1,0 +1,17 @@
+version: "1.0.0"
+
+default_model: "gpt-4o"
+candidates_per_prompt: 4
+
+prompt_generation:
+  temperature: 0.9
+  max_tokens: 256
+
+response_generation:
+  temperature: 0.9
+  max_tokens: 1024
+
+candidate_mix:
+  # Fraction of candidate responses per prompt that should be safe/helpful.
+  # The remaining candidates are generated as unsafe/harmful contrasts.
+  safe_fraction: 0.50

@@ -17,13 +17,11 @@ import structlog
 from sqlalchemy.orm import Session
 
 from src.config.env import load_project_env
+from src.config.export import ExportConfig, load_export_config
 from src.storage.db import DatasetItemORM
 
 load_project_env()
 logger = structlog.get_logger(__name__)
-
-_DATA_DIR = Path(os.environ.get("DATA_DIR", "./data"))
-
 
 class DatasetVersioner:
     """
@@ -42,6 +40,10 @@ class DatasetVersioner:
         ├── ...
         └── dataset_card.json
     """
+
+    def __init__(self, config: ExportConfig | None = None):
+        self._config = config or load_export_config()
+        self._data_dir = Path(os.environ.get("DATA_DIR", "./data"))
 
     def export(
         self,
@@ -62,7 +64,7 @@ class DatasetVersioner:
         """
         from src.storage.db import CandidateResponseORM
 
-        release_dir = _DATA_DIR / "releases" / version
+        release_dir = self._data_dir / "releases" / version
         release_dir.mkdir(parents=True, exist_ok=True)
 
         query = session.query(DatasetItemORM).filter(
@@ -112,35 +114,40 @@ class DatasetVersioner:
             key = (item.language, item.item_type)
             groups.setdefault(key, []).append(item)
 
-        # Write per-language files
+        # Write per-language native files
         item_counts: dict[str, int] = {}
-        for (lang, itype), lang_items in groups.items():
-            lang_dir = release_dir / lang
-            lang_dir.mkdir(exist_ok=True)
-            out_path = lang_dir / f"{itype}.jsonl"
-            self._write_jsonl(out_path, lang_items)
-            item_counts[f"{lang}/{itype}"] = len(lang_items)
+        if self._config.write_native_jsonl:
+            for (lang, itype), lang_items in groups.items():
+                if itype not in self._config.native_item_types:
+                    continue
+                lang_dir = release_dir / lang
+                lang_dir.mkdir(exist_ok=True)
+                out_path = lang_dir / f"{itype}.jsonl"
+                self._write_jsonl(out_path, lang_items)
+                item_counts[f"{lang}/{itype}"] = len(lang_items)
 
         # Write all-language combined files
-        all_dir = release_dir / "all_languages"
-        all_dir.mkdir(exist_ok=True)
+        if self._config.write_native_jsonl and self._config.write_all_languages:
+            all_dir = release_dir / "all_languages"
+            all_dir.mkdir(exist_ok=True)
 
-        item_types = {"preference_pair", "qa_safe", "qa_unsafe", "classification"}
-        for itype in item_types:
-            all_items = [i for i in items if i.item_type == itype]
-            if all_items:
-                out_path = all_dir / f"{itype}.jsonl"
-                self._write_jsonl(out_path, all_items)
+            for itype in self._config.native_item_types:
+                all_items = [i for i in items if i.item_type == itype]
+                if all_items:
+                    out_path = all_dir / f"{itype}.jsonl"
+                    self._write_jsonl(out_path, all_items)
 
         # Write PKU-style release files:
         #   prompts.jsonl, qa_pairs.jsonl, preference_pairs.jsonl
-        self._write_pku_style_exports(release_dir, items)
+        if self._config.write_pku_style_jsonl:
+            self._write_pku_style_exports(release_dir, items)
 
         # Write dataset card
-        card = self._build_dataset_card(version, items, item_counts, review_stats)
-        card_path = release_dir / "dataset_card.json"
-        with open(card_path, "w", encoding="utf-8") as f:
-            json.dump(card, f, ensure_ascii=False, indent=2)
+        if self._config.write_dataset_card:
+            card = self._build_dataset_card(version, items, item_counts, review_stats)
+            card_path = release_dir / "dataset_card.json"
+            with open(card_path, "w", encoding="utf-8") as f:
+                json.dump(card, f, ensure_ascii=False, indent=2)
 
         logger.info(
             "dataset_versioner.export_complete",
@@ -227,7 +234,9 @@ class DatasetVersioner:
 
     def _write_pku_style_exports(self, release_dir: Path, items: list[DatasetItemORM]) -> None:
         """Write three PKU-style dataset products alongside AfriGuard-native files."""
-        grouped: dict[str, list[DatasetItemORM]] = {"all_languages": items}
+        grouped: dict[str, list[DatasetItemORM]] = {}
+        if self._config.write_all_languages:
+            grouped["all_languages"] = items
         for item in items:
             grouped.setdefault(item.language, []).append(item)
 
@@ -399,6 +408,12 @@ class DatasetVersioner:
             "items_by_language": by_language,
             "items_by_type": by_type,
             "item_counts_detail": item_counts,
+            "export_policy": {
+                "write_native_jsonl": self._config.write_native_jsonl,
+                "write_pku_style_jsonl": self._config.write_pku_style_jsonl,
+                "write_all_languages": self._config.write_all_languages,
+                "native_item_types": list(self._config.native_item_types),
+            },
             "pku_style_outputs": {
                 "prompts": "pku_style/prompts.jsonl",
                 "qa_pairs": "pku_style/qa_pairs.jsonl",
@@ -408,7 +423,7 @@ class DatasetVersioner:
                     "files remain available as classification, qa_safe, qa_unsafe, "
                     "and preference_pair JSONL files."
                 ),
-            },
+            } if self._config.write_pku_style_jsonl else {},
             "license": "CC BY 4.0",
             "created_at": datetime.now(tz=timezone.utc).isoformat(),
             "citation": (

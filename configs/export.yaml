@@ -1,0 +1,21 @@
+version: "1.0.0"
+
+# AfriGuard-native JSONL files:
+# classification.jsonl, preference_pair.jsonl, qa_safe.jsonl, qa_unsafe.jsonl
+write_native_jsonl: true
+
+# PKU-compatible JSONL files:
+# pku_style/prompts.jsonl, qa_pairs.jsonl, preference_pairs.jsonl
+write_pku_style_jsonl: true
+
+# Combined cross-language exports under all_languages/.
+write_all_languages: true
+
+# Dataset card with provenance, counts, and review coverage.
+write_dataset_card: true
+
+native_item_types:
+  - preference_pair
+  - qa_safe
+  - qa_unsafe
+  - classification

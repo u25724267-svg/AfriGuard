@@ -7,6 +7,7 @@ to include as legal conditioning in prompt system messages.
 
 from __future__ import annotations
 
+from src.config.legal_grounding import LegalGroundingConfig, load_legal_grounding_config
 from src.config.languages import get_legal_countries
 from src.taxonomy.harm_registry import HarmRegistry, get_registry
 
@@ -193,8 +194,13 @@ class LegalGrounder:
     optionally from the HarmRegistry for additional detail.
     """
 
-    def __init__(self, registry: HarmRegistry | None = None):
+    def __init__(
+        self,
+        registry: HarmRegistry | None = None,
+        config: LegalGroundingConfig | None = None,
+    ):
         self._registry = registry or get_registry()
+        self._config = config or load_legal_grounding_config()
 
     def get_legal_context(self, language: str, harm_category: str) -> str:
         """
@@ -202,21 +208,34 @@ class LegalGrounder:
 
         Falls back to generic research context if no specific law is found.
         """
+        if not self._config.enabled:
+            return ""
+
         try:
             countries = get_legal_countries(language) if language else []
         except KeyError:
             countries = []
         category_laws = _LEGAL_SUMMARIES.get(harm_category, {})
         legal_text = ""
-        for country in countries:
-            legal_text = category_laws.get(country, "")
-            if legal_text:
-                break
+        if self._config.include_embedded_summaries:
+            for country in countries:
+                legal_text = category_laws.get(country, "")
+                if legal_text:
+                    break
 
-        if not legal_text:
+        if not legal_text and self._config.include_registry_references:
             # Try registry references
             refs = self._registry.get_legal_references(harm_category, language)
             if refs:
                 legal_text = "Relevant laws: " + "; ".join(refs)
 
-        return legal_text or _GENERIC_LEGAL
+        if not legal_text and self._config.fallback_to_generic:
+            legal_text = _GENERIC_LEGAL
+
+        return self._truncate(legal_text)
+
+    def _truncate(self, legal_text: str) -> str:
+        max_chars = self._config.max_chars
+        if max_chars <= 0 or len(legal_text) <= max_chars:
+            return legal_text
+        return legal_text[:max_chars].rstrip() + "..."

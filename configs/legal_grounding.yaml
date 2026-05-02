@@ -1,0 +1,17 @@
+version: "1.0.0"
+
+# Legal grounding keeps generated data tied to relevant African legal context.
+enabled: true
+
+# Use curated short legal summaries embedded in LegalGrounder.
+include_embedded_summaries: true
+
+# If no curated summary exists, fall back to references in harm_taxonomy.yaml.
+include_registry_references: true
+
+# If neither source has category-specific law, use a generic safety-research note.
+fallback_to_generic: true
+
+# Maximum legal-context characters injected into a prompt.
+# Set to 0 to disable truncation.
+max_chars: 1200

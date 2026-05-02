@@ -131,19 +131,21 @@ def generate(language, category, severity, n_prompts, model, run_id, dry_run):
     """Generate prompts and candidate responses using LLM."""
     import yaml
     from pathlib import Path
+    from src.config.generation import load_generation_config
     from src.config.languages import list_language_names
 
+    generation_config = load_generation_config()
     config_path = Path(__file__).parent.parent.parent / "configs" / "pipeline.yaml"
     with open(config_path) as f:
         config = yaml.safe_load(f)
 
-    model_id = model or os.environ.get("PIPELINE_DEFAULT_MODEL", "gpt-4o")
+    model_id = model or generation_config.default_model
     languages = [language] if language else list_language_names()
     categories = [category] if category else config["active_harm_categories"]
     severities = [severity] if severity else ["S1", "S2", "S3", "S4"]
 
     poc_max = int(os.environ.get("POC_MAX_ITEMS_PER_LANGUAGE", config["pipeline"]["poc_max_items_per_language"]))
-    n_candidates = int(os.environ.get("PIPELINE_CANDIDATES_PER_PROMPT", config["pipeline"]["candidates_per_prompt"]))
+    n_candidates = generation_config.candidates_per_prompt
 
     total_combinations = len(languages) * len(categories) * len(severities)
     click.echo(
@@ -233,32 +235,22 @@ def filter_candidates(language, run_id, retry_language_fail):
     from src.filtering.similarity_filter import SimilarityFilter
     from src.filtering.deduplicator import Deduplicator
     from src.generation.model_router import ModelRouter
-    import yaml
-    from pathlib import Path
+    from src.config.filtering import load_filtering_config
 
-    config_path = Path(__file__).parent.parent.parent / "configs" / "pipeline.yaml"
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
-
-    sim_threshold = float(os.environ.get(
-        "PIPELINE_SIMILARITY_THRESHOLD",
-        config["pipeline"]["similarity_threshold"]
-    ))
-    min_quality = float(os.environ.get(
-        "PIPELINE_MIN_QUALITY_SCORE",
-        config["pipeline"]["min_quality_score"]
-    ))
+    filtering_config = load_filtering_config()
+    sim_threshold = filtering_config.similarity_threshold
+    min_quality = filtering_config.min_quality_score
 
     # BUG FIX: LanguageDetector was constructed without a router, so the
     # LLM fallback tier for low-resource languages (Yao, Sepedi, Northern
     # Sotho) was silently disabled. We now pass a ModelRouter so the
     # three-tier cascade (langdetect → langid → LLM) actually fires.
     router = ModelRouter()
-    lang_detector = LanguageDetector(llm_router=router)
+    lang_detector = LanguageDetector(llm_router=router, config=filtering_config)
 
     quality_scorer = QualityScorer()
     sim_filter = SimilarityFilter(threshold=sim_threshold)
-    deduplicator = Deduplicator()
+    deduplicator = Deduplicator(threshold=filtering_config.deduplication_threshold)
     deduplicator.load()
 
     stats = {"language_fail": 0, "quality_fail": 0, "similarity_fail": 0, "dup_fail": 0, "passed": 0}
@@ -389,11 +381,12 @@ def assign_review():
 
 @cli.command("sample-for-review")
 @click.option("--language", "-l", default=None, help="Sample for this language only (all if not set)")
-@click.option("--n-per-language", "-n", default=50, show_default=True, help="Maximum candidates to surface per language")
-@click.option("--borderline-fraction", default=0.20, show_default=True, help="Fraction of quota from near-threshold borderline cases")
+@click.option("--n-per-language", "-n", default=None, type=int, help="Maximum candidates to surface per language (default from configs/review_sampling.yaml)")
+@click.option("--borderline-fraction", default=None, type=float, help="Fraction of quota from near-threshold borderline cases (default from configs/review_sampling.yaml)")
+@click.option("--borderline-margin", default=None, type=float, help="Quality-score margin used to define borderline cases (default from configs/review_sampling.yaml)")
 @click.option("--run-id", default=None, help="Restrict sample to this pipeline run")
 @click.option("--seed", default=None, type=int, help="Random seed for reproducibility")
-def sample_for_review(language, n_per_language, borderline_fraction, run_id, seed):
+def sample_for_review(language, n_per_language, borderline_fraction, borderline_margin, run_id, seed):
     """
     Select a stratified sample of passed-filter candidates for human review.
 
@@ -407,17 +400,26 @@ def sample_for_review(language, n_per_language, borderline_fraction, run_id, see
     """
     from src.storage.db import SessionLocal
     from src.review.sample_selector import SampleSelector
-    import yaml
-    from pathlib import Path as _Path
+    from src.config.filtering import load_filtering_config
+    from src.config.review_sampling import load_review_sampling_config
 
-    config_path = _Path(__file__).parent.parent.parent / "configs" / "pipeline.yaml"
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
-
-    min_quality = float(os.environ.get(
-        "PIPELINE_MIN_QUALITY_SCORE",
-        config["pipeline"]["min_quality_score"]
-    ))
+    sampling_config = load_review_sampling_config()
+    n_per_language = (
+        n_per_language
+        if n_per_language is not None
+        else sampling_config.n_per_language
+    )
+    borderline_fraction = (
+        borderline_fraction
+        if borderline_fraction is not None
+        else sampling_config.borderline_fraction
+    )
+    borderline_margin = (
+        borderline_margin
+        if borderline_margin is not None
+        else sampling_config.borderline_margin
+    )
+    min_quality = load_filtering_config().min_quality_score
     languages = [language] if language else None
 
     selector = SampleSelector()
@@ -427,6 +429,7 @@ def sample_for_review(language, n_per_language, borderline_fraction, run_id, see
             n_per_language=n_per_language,
             languages=languages,
             borderline_fraction=borderline_fraction,
+            borderline_margin=borderline_margin,
             min_quality=min_quality,
             run_id=run_id,
             seed=seed,
@@ -635,8 +638,9 @@ def run_all(ctx, language, version, n_prompts, run_id, resume):
         lambda: ctx.invoke(
             sample_for_review,
             language=language,
-            n_per_language=50,
-            borderline_fraction=0.20,
+            n_per_language=None,
+            borderline_fraction=None,
+            borderline_margin=None,
             run_id=active_run_id,
             seed=42,
         ),

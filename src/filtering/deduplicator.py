@@ -14,6 +14,8 @@ import re
 import struct
 import structlog
 
+from src.config.filtering import load_filtering_config
+
 logger = structlog.get_logger(__name__)
 
 _NUM_PERM = 128          # MinHash permutations (higher = more accurate)
@@ -44,10 +46,10 @@ class Deduplicator:
     def __init__(
         self,
         num_perm: int = _NUM_PERM,
-        threshold: float = _THRESHOLD,
+        threshold: float | None = None,
     ):
         self.num_perm = num_perm
-        self.threshold = threshold
+        self.threshold = threshold if threshold is not None else load_filtering_config().deduplication_threshold
         self._lsh = None
         self._seen_ids: dict[str, str] = {}  # minhash_key -> original_id
         self._initialized = False
@@ -213,4 +215,3 @@ class Deduplicator:
 
         logger.info("deduplicator.loaded", path=load_path, size=len(self._seen_ids))
         return True
-

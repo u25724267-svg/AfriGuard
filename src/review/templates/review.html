@@ -92,6 +92,15 @@
     .btn-reject:hover { background: rgba(239,68,68,0.3); }
     .btn-flag { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); }
     .btn-escalate { background: rgba(127,29,29,0.3); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .instructions {
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56,189,248,0.18);
+      border-radius: 10px;
+      color: #bae6fd;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      padding: 14px 18px;
+    }
     .empty { text-align: center; padding: 80px 20px; color: #475569; }
     .empty .icon { font-size: 3rem; margin-bottom: 16px; }
     .quality-bar { height: 4px; border-radius: 2px; background: #1e293b; margin-bottom: 8px; }
@@ -104,7 +113,7 @@
     <div style="display:flex;align-items:center;gap:16px">
       <span class="meta">{{ reviewer_id }}</span>
       <a href="/stats">📊 Stats</a>
-      <a href="/logout">Sign out</a>
+      <a href="/logout">{{ ui.logout_label }}</a>
     </div>
   </nav>
 
@@ -112,23 +121,25 @@
     <div class="stats-bar">
       <div class="stat-card">
         <div class="value">{{ annotated_count }}</div>
-        <div class="label">Annotations completed</div>
+        <div class="label">{{ ui.annotations_completed_label }}</div>
       </div>
       <div class="stat-card">
         <div class="value">{{ pending_count }}</div>
-        <div class="label">Review items in queue</div>
+        <div class="label">{{ ui.queue_count_label }}</div>
       </div>
       <div class="stat-card">
         <div class="value">{{ task_group_count }}</div>
-        <div class="label">Prompt groups open</div>
+        <div class="label">{{ ui.prompt_group_count_label }}</div>
       </div>
     </div>
+
+    <div class="instructions">{{ ui.review_instructions }}</div>
 
     {% if not tasks %}
     <div class="empty">
       <div class="icon">✅</div>
-      <h2>All caught up!</h2>
-      <p>No pending review tasks for your language. Check back after the next generation run.</p>
+      <h2>{{ ui.empty_title }}</h2>
+      <p>{{ ui.empty_body }}</p>
     </div>
     {% endif %}
 

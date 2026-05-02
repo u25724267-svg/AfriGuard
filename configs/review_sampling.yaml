@@ -1,0 +1,13 @@
+version: "1.0.0"
+
+# Human review is intentionally sampled because researchers are also reviewers.
+# These defaults control how many passed-filter candidates are surfaced to them.
+n_per_language: 50
+
+# Fraction of each language quota reserved for near-threshold candidates.
+# These are useful for catching ambiguous quality/filtering issues.
+borderline_fraction: 0.20
+
+# A candidate is considered borderline when:
+# quality_score < min_quality_score + borderline_margin
+borderline_margin: 0.15

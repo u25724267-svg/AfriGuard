@@ -1,5 +1,5 @@
 """
-AfriGuard — Prompt Construction: SeedContextInjector
+AfriGuard - Prompt Construction: SeedContextInjector
 
 Retrieves relevant seed documents from the database and formats them
 as context snippets for injection into prompt templates.
@@ -12,25 +12,24 @@ import random
 import structlog
 from sqlalchemy.orm import Session
 
+from src.config.seed_context import SeedContextConfig, load_seed_context_config
 from src.storage.db import SeedDocumentORM
 
 logger = structlog.get_logger(__name__)
 
-# Maximum characters to include from a single seed document
-MAX_SEED_EXCERPT_CHARS = 400
 
-
-def _excerpt(text: str, max_chars: int = MAX_SEED_EXCERPT_CHARS) -> str:
+def _excerpt(text: str, max_chars: int) -> str:
     """Return a clean excerpt of a seed document."""
     text = text.strip()
-    if len(text) <= max_chars:
+    if max_chars <= 0 or len(text) <= max_chars:
         return text
-    # Try to cut at a sentence boundary
+
+    # Try to cut at a sentence boundary.
     cut = text[:max_chars]
     last_period = cut.rfind(".")
     if last_period > max_chars // 2:
         return cut[: last_period + 1]
-    return cut + "…"
+    return cut + "..."
 
 
 class SeedContextInjector:
@@ -44,44 +43,54 @@ class SeedContextInjector:
     It then formats them as a context block for the LLM system prompt.
     """
 
-    def __init__(self, n_seeds: int = 5):
+    def __init__(
+        self,
+        n_seeds: int | None = None,
+        config: SeedContextConfig | None = None,
+    ):
         """
         Args:
-            n_seeds: Number of seed documents to inject per prompt.
+            n_seeds: Optional override for seed documents injected per prompt.
         """
-        self.n_seeds = n_seeds
+        self._config = config or load_seed_context_config()
+        self.n_seeds = n_seeds if n_seeds is not None else self._config.n_seeds
 
     def get_context_block(
         self,
         session: Session,
         language: str,
         harm_category: str,
-        shuffle: bool = True,
-    ) -> str:
+        shuffle: bool | None = None,
+    ) -> tuple[str, list[str]]:
         """
         Build a seed context block for the given language and harm category.
 
-        Returns a formatted multi-line string ready for prompt injection.
-        If no seeds are found, returns an empty string (generation continues
-        without seed context, relying on cultural entity injection instead).
+        Returns a formatted multi-line string ready for prompt injection plus
+        the seed IDs used for provenance. If no seeds are found, returns an
+        empty context and empty seed ID list.
         """
-        # Fetch more than needed so we can randomly sample
+        if not self._config.enabled:
+            return "", []
+
+        should_shuffle = self._config.shuffle if shuffle is None else shuffle
+
+        # Fetch more than needed so we can randomly sample.
         candidates: list[SeedDocumentORM] = (
             session.query(SeedDocumentORM)
             .filter(
                 SeedDocumentORM.language == language,
                 SeedDocumentORM.harm_domains.contains(harm_category),
             )
-            .limit(self.n_seeds * 5)
+            .limit(self.n_seeds * self._config.exact_match_pool_multiplier)
             .all()
         )
 
-        if not candidates:
-            # Fall back: any seed for this language (used as cultural context)
+        if not candidates and self._config.fallback_to_language:
+            # Fall back: any seed for this language, used as cultural context.
             candidates = (
                 session.query(SeedDocumentORM)
                 .filter(SeedDocumentORM.language == language)
-                .limit(self.n_seeds * 3)
+                .limit(self.n_seeds * self._config.language_fallback_pool_multiplier)
                 .all()
             )
 
@@ -91,16 +100,19 @@ class SeedContextInjector:
                 language=language,
                 harm_category=harm_category,
             )
-            return ""
+            return "", []
 
-        if shuffle:
+        if should_shuffle:
             random.shuffle(candidates)
 
         selected = candidates[: self.n_seeds]
         seed_ids = [s.id for s in selected]
 
-        excerpts = [_excerpt(s.text) for s in selected]
-        context_block = "\n---\n".join(f"• {e}" for e in excerpts)
+        excerpts = [
+            _excerpt(s.text, self._config.max_excerpt_chars)
+            for s in selected
+        ]
+        context_block = "\n---\n".join(f"- {e}" for e in excerpts)
 
         logger.debug(
             "seed_context_injector.context_built",
@@ -115,9 +127,15 @@ class SeedContextInjector:
         self, seed_texts: list[str]
     ) -> tuple[str, list[str]]:
         """
-        Build a context block from pre-fetched seed texts (for testing).
+        Build a context block from pre-fetched seed texts for testing.
         Returns (context_block, empty_seed_ids).
         """
-        excerpts = [_excerpt(t) for t in seed_texts[: self.n_seeds]]
-        context_block = "\n---\n".join(f"• {e}" for e in excerpts)
+        if not self._config.enabled:
+            return "", []
+
+        excerpts = [
+            _excerpt(t, self._config.max_excerpt_chars)
+            for t in seed_texts[: self.n_seeds]
+        ]
+        context_block = "\n---\n".join(f"- {e}" for e in excerpts)
         return context_block, []

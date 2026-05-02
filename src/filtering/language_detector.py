@@ -15,6 +15,7 @@ import unicodedata
 
 import structlog
 
+from src.config.filtering import FilteringConfig, load_filtering_config
 from src.config.languages import (
     get_language_aliases_map,
     get_language_codes_map,
@@ -98,13 +99,14 @@ class LanguageDetector:
       0.0 = definite mismatch (text appears to be in a different language)
     """
 
-    def __init__(self, llm_router=None):
+    def __init__(self, llm_router=None, config: FilteringConfig | None = None):
         """
         Args:
             llm_router: Optional ModelRouter for LLM-based language checking.
                         If None, LLM fallback is disabled.
         """
         self._llm_router = llm_router
+        self._config = config or load_filtering_config()
         self._langdetect_available = self._check_langdetect()
         self._langid_available = self._check_langid()
 
@@ -132,7 +134,7 @@ class LanguageDetector:
             LanguageDetectionResult with confidence score.
         """
         text = text.strip()
-        if not text or len(text) < 10:
+        if not text or len(text) < self._config.language_detection.min_text_chars:
             return LanguageDetectionResult(detected="unknown", confidence=0.0, method="heuristic")
 
         expected_codes = _LANG_CODE_MAP.get(expected_language.lower(), set())
@@ -140,13 +142,13 @@ class LanguageDetector:
         # --- Try langdetect ---
         if self._langdetect_available:
             result = self._try_langdetect(text, expected_codes)
-            if result.confidence > 0.5:
+            if result.confidence > self._config.language_detection.library_accept_threshold:
                 return result
 
         # --- Try langid ---
         if self._langid_available:
             result = self._try_langid(text, expected_codes)
-            if result.confidence > 0.5:
+            if result.confidence > self._config.language_detection.library_accept_threshold:
                 return result
 
         # --- For low-resource languages, default to moderate confidence ---
@@ -243,18 +245,22 @@ class LanguageDetector:
             )
         except Exception as e:
             logger.warning("language_detector.llm_fallback_failed", error=str(e))
-            return LanguageDetectionResult(detected=expected_language, confidence=0.4, method="heuristic")
+            return LanguageDetectionResult(
+                detected=expected_language,
+                confidence=self._config.language_detection.llm_failure_fallback_confidence,
+                method="heuristic",
+            )
 
     def is_acceptable(
-        self, text: str, expected_language: str, threshold: float = 0.4
+        self, text: str, expected_language: str, threshold: float | None = None
     ) -> tuple[bool, LanguageDetectionResult]:
         """
         Returns (passes, result). Passes if confidence >= threshold.
         Low-resource languages use a lower effective threshold (0.35).
         """
-        effective_threshold = threshold
+        effective_threshold = threshold or self._config.language_detection.default_threshold
         if expected_language.lower() in _LOW_RESOURCE_FALLBACK:
-            effective_threshold = 0.35
+            effective_threshold = self._config.language_detection.low_resource_threshold
 
         result = self.detect(text, expected_language)
         passes = result.confidence >= effective_threshold

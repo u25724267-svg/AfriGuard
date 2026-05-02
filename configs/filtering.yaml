@@ -1,0 +1,33 @@
+version: "1.0.0"
+description: >
+  Filtering policy for generated candidate responses. These values are tuned
+  frequently during experiments, so they live in config instead of code.
+
+quality:
+  # Candidates below this composite quality score are filtered.
+  min_score: 0.60
+
+similarity:
+  # Within-prompt cosine similarity above this value is treated as a duplicate.
+  threshold: 0.85
+
+deduplication:
+  # Cross-batch MinHash Jaccard threshold for near-duplicate responses.
+  threshold: 0.70
+
+language_detection:
+  # Minimum characters required before trying language detection.
+  min_text_chars: 10
+
+  # Confidence needed from langdetect/langid before accepting a library result.
+  library_accept_threshold: 0.50
+
+  # Confidence needed for ordinary language-detection acceptance.
+  default_threshold: 0.40
+
+  # Confidence needed for low-resource languages configured in languages.yaml.
+  low_resource_threshold: 0.35
+
+  # Confidence assigned when the LLM fallback fails but the target language is
+  # low-resource and should not be dropped too aggressively.
+  llm_failure_fallback_confidence: 0.40

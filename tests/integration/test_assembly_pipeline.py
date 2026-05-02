@@ -9,6 +9,7 @@ from src.assembly.preference_builder import PreferenceBuilder
 from src.assembly.qa_builder import QABuilder
 from src.assembly.classification_builder import ClassificationBuilder
 from src.assembly.dataset_versioner import DatasetVersioner
+from src.config.export import ExportConfig
 from src.storage.db import (
     AnnotationORM,
     CandidateResponseORM,
@@ -195,3 +196,28 @@ def test_export_deduplicates_existing_duplicate_dataset_rows(db_session, tmp_pat
 
     keys = [(record["prompt_id"], record["response_id"], record["is_safe"]) for record in qa_records]
     assert len(keys) == len(set(keys))
+
+
+def test_dataset_export_can_disable_pku_style_outputs(db_session, tmp_path):
+    """Export policy should allow native-only releases."""
+    import os
+    os.environ["DATA_DIR"] = str(tmp_path)
+
+    _seed_prompt_and_candidates(db_session)
+    PreferenceBuilder().build(db_session, "0.1.0", "test-run")
+    QABuilder().build(db_session, "0.1.0", "test-run")
+
+    config = ExportConfig(
+        write_native_jsonl=True,
+        write_pku_style_jsonl=False,
+        write_all_languages=True,
+        write_dataset_card=True,
+        native_item_types=("preference_pair", "qa_safe", "qa_unsafe", "classification"),
+    )
+    release_dir = DatasetVersioner(config=config).export(db_session, "0.1.0")
+
+    assert (release_dir / "hausa" / "qa_safe.jsonl").exists()
+    assert not (release_dir / "hausa" / "pku_style").exists()
+    card = json.loads((release_dir / "dataset_card.json").read_text())
+    assert card["export_policy"]["write_pku_style_jsonl"] is False
+    assert card["pku_style_outputs"] == {}

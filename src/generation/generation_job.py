@@ -32,6 +32,7 @@ from src.prompt_construction.prompt_version_store import PromptVersionStore
 from src.prompt_construction.seed_context_injector import SeedContextInjector
 from src.storage.db import GeneratedPromptORM, CandidateResponseORM
 from src.taxonomy.harm_registry import get_registry
+from src.config.generation import load_generation_config
 from src.config.languages import get_language_code
 
 logger = structlog.get_logger(__name__)
@@ -75,6 +76,7 @@ class GenerationJob:
         self._version_store = PromptVersionStore()
         self._cost_tracker = CostTracker()
         self._registry = get_registry()
+        self._generation_config = load_generation_config()
 
     def run(self, session: Session, n_prompts: int = 1) -> list[str]:
         """
@@ -177,6 +179,8 @@ class GenerationJob:
             model_id=self.prompt_model_id,
             system_prompt=system_prompt,
             user_message=user_message,
+            temperature=self._generation_config.prompt_generation.temperature,
+            max_tokens=self._generation_config.prompt_generation.max_tokens,
         )
 
         # Track cost
@@ -218,7 +222,7 @@ class GenerationJob:
             legal_context_used=legal_context,
             entities_injected=entities_injected,
             model_used=self.prompt_model_id,
-            generation_params={"temperature": 0.9, "max_tokens": 256},
+            generation_params=self._generation_config.prompt_generation.to_dict(),
             prompt_tokens=prompt_response.prompt_tokens,
             completion_tokens=prompt_response.completion_tokens,
             cost_usd=prompt_response.cost_usd,
@@ -230,9 +234,9 @@ class GenerationJob:
         session.flush()
 
         # --- Step 5: Generate N candidate responses ---
-        # Half safe, half unsafe (rounded)
-        n_safe = self.n_candidates // 2
-        n_unsafe = self.n_candidates - n_safe
+        n_safe, n_unsafe = self._generation_config.candidate_mix.response_type_counts(
+            self.n_candidates
+        )
 
         candidates_generated = 0
         for resp_type, count in [("safe", n_safe), ("unsafe", n_unsafe)]:
@@ -249,6 +253,8 @@ class GenerationJob:
                         model_id=self.model_id,
                         system_prompt=resp_sys_prompt,
                         user_message=prompt_response.text,
+                        temperature=self._generation_config.response_generation.temperature,
+                        max_tokens=self._generation_config.response_generation.max_tokens,
                     )
                     self._cost_tracker.record(
                         session=session,
@@ -273,7 +279,7 @@ class GenerationJob:
                         response_text=resp.text,
                         response_type=resp_type,
                         model_used=self.model_id,
-                        generation_params={"temperature": 0.9, "max_tokens": 1024},
+                        generation_params=self._generation_config.response_generation.to_dict(),
                         prompt_tokens=resp.prompt_tokens,
                         completion_tokens=resp.completion_tokens,
                         cost_usd=resp.cost_usd,

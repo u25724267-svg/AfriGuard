@@ -22,6 +22,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from src.config.env import load_project_env
 from src.config.languages import get_reviewer_accounts, get_reviewer_language
+from src.config.review_ui import load_review_ui_config
 from src.observability.logging_config import configure_logging
 from src.review.escalation_queue import EscalationQueue
 from src.review.task_assigner import TaskAssigner
@@ -76,6 +77,7 @@ templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 _REVIEWER_OPTIONS = get_reviewer_accounts()
 _REVIEWER_IDS = {account["reviewer_id"] for account in _REVIEWER_OPTIONS}
+_UI_CONFIG = load_review_ui_config()
 
 
 def _load_admin_password() -> str:
@@ -143,7 +145,11 @@ async def login_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"error": None, "reviewer_options": _REVIEWER_OPTIONS},
+        context={
+            "error": None,
+            "reviewer_options": _REVIEWER_OPTIONS,
+            "ui": _UI_CONFIG.template_context(),
+        },
     )
 
 
@@ -168,8 +174,9 @@ async def login(
         request=request,
         name="login.html",
         context={
-            "error": "Invalid credentials. Please try again.",
+            "error": _UI_CONFIG.text.invalid_login_error,
             "reviewer_options": _REVIEWER_OPTIONS,
+            "ui": _UI_CONFIG.template_context(),
         },
         status_code=401,
     )
@@ -190,7 +197,11 @@ async def review_queue(
     if not reviewer_id:
         return RedirectResponse("/")
 
-    tasks = _ASSIGNER.get_pending_tasks(session=db, reviewer_id=reviewer_id, limit=10)
+    tasks = _ASSIGNER.get_pending_tasks(
+        session=db,
+        reviewer_id=reviewer_id,
+        limit=_UI_CONFIG.tasks_per_page,
+    )
     pending_item_count = _ASSIGNER.count_pending_items(session=db, reviewer_id=reviewer_id)
 
     annotated_count = (
@@ -218,6 +229,7 @@ async def review_queue(
             "annotated_count": annotated_count,
             "pending_count": pending_item_count,
             "task_group_count": len(tasks),
+            "ui": _UI_CONFIG.template_context(),
         },
     )
 
@@ -295,7 +307,11 @@ async def escalated_queue(
     return templates.TemplateResponse(
         request=request,
         name="escalated.html",
-        context={"items": items, "reviewer_id": reviewer_id},
+        context={
+            "items": items,
+            "reviewer_id": reviewer_id,
+            "ui": _UI_CONFIG.template_context(),
+        },
     )
 
 
@@ -329,5 +345,9 @@ async def stats_page(
     return templates.TemplateResponse(
         request=request,
         name="stats.html",
-        context={"stats": stats, "reviewer_id": reviewer_id},
+        context={
+            "stats": stats,
+            "reviewer_id": reviewer_id,
+            "ui": _UI_CONFIG.template_context(),
+        },
     )

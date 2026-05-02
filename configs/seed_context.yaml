@@ -1,0 +1,20 @@
+version: "1.0.0"
+
+# Number of seed documents injected into each prompt.
+n_seeds: 5
+
+# Maximum characters included from each seed document excerpt.
+max_excerpt_chars: 400
+
+# Fetch a larger pool before selecting final seeds, so shuffle has variety.
+exact_match_pool_multiplier: 5
+language_fallback_pool_multiplier: 3
+
+# If no harm-category-specific seed exists, use any seed from the same language.
+fallback_to_language: true
+
+# Shuffle candidate seeds before selection.
+shuffle: true
+
+# Set false for experiments that should not inject seed context.
+enabled: true

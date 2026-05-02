@@ -45,16 +45,12 @@ from typing import Any
 import structlog
 from sqlalchemy.orm import Session
 
+from src.config.filtering import load_filtering_config
 from src.config.languages import list_language_names
+from src.config.review_sampling import load_review_sampling_config
 from src.storage.db import CandidateResponseORM
 
 logger = structlog.get_logger(__name__)
-
-# Default sampling parameters
-_DEFAULT_N_PER_LANGUAGE = 50
-_DEFAULT_BORDERLINE_FRACTION = 0.20   # 20% of quota from near-threshold cases
-_DEFAULT_BORDERLINE_MARGIN = 0.15     # quality_score within this above min_quality
-_DEFAULT_MIN_QUALITY = 0.60           # should match pipeline.yaml min_quality_score
 
 _ALL_LANGUAGES = list_language_names()
 
@@ -105,11 +101,11 @@ class SampleSelector:
     def select(
         self,
         session: Session,
-        n_per_language: int = _DEFAULT_N_PER_LANGUAGE,
+        n_per_language: int | None = None,
         languages: list[str] | None = None,
-        borderline_fraction: float = _DEFAULT_BORDERLINE_FRACTION,
-        borderline_margin: float = _DEFAULT_BORDERLINE_MARGIN,
-        min_quality: float = _DEFAULT_MIN_QUALITY,
+        borderline_fraction: float | None = None,
+        borderline_margin: float | None = None,
+        min_quality: float | None = None,
         run_id: str | None = None,
         seed: int | None = None,
     ) -> SampleResult:
@@ -129,6 +125,28 @@ class SampleSelector:
         Returns:
             SampleResult with counts and breakdown.
         """
+        sampling_config = load_review_sampling_config()
+        n_per_language = (
+            n_per_language
+            if n_per_language is not None
+            else sampling_config.n_per_language
+        )
+        borderline_fraction = (
+            borderline_fraction
+            if borderline_fraction is not None
+            else sampling_config.borderline_fraction
+        )
+        borderline_margin = (
+            borderline_margin
+            if borderline_margin is not None
+            else sampling_config.borderline_margin
+        )
+        min_quality = (
+            min_quality
+            if min_quality is not None
+            else load_filtering_config().min_quality_score
+        )
+
         if seed is not None:
             random.seed(seed)
 

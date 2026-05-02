@@ -7,11 +7,6 @@ pipeline:
   poc_mode: true                     # limits generation to poc_max_items_per_language
   poc_max_items_per_language: 100    # items per language in PoC mode
   batch_size: 10                     # prompts processed per generation batch
-  candidates_per_prompt: 4           # candidate responses generated per prompt
-  default_model: "gpt-4o"
-  seed_sample_size: 5                # seed documents injected per prompt
-  similarity_threshold: 0.85         # cosine similarity above which candidates are dropped
-  min_quality_score: 0.60            # candidates below this score are filtered
   min_response_length: 30            # characters
   max_response_length: 2000          # characters
 

@@ -1,0 +1,23 @@
+version: "1.0.0"
+
+tasks_per_page: 10
+
+text:
+  app_name: "AfriGuard"
+  login_title: "AfriGuard - Login"
+  login_subtitle: "Safety Alignment Review Portal"
+  language_select_label: "Language To Review"
+  language_select_placeholder: "Select your language"
+  sign_in_button: "Sign In"
+  invalid_login_error: "Invalid credentials. Please try again."
+  review_title: "AfriGuard - Review Queue"
+  review_brand: "AfriGuard Review"
+  stats_link_label: "Stats"
+  logout_label: "Sign out"
+  annotations_completed_label: "Annotations completed"
+  queue_count_label: "Review items in queue"
+  prompt_group_count_label: "Prompt groups open"
+  empty_title: "All caught up!"
+  empty_body: "No pending review tasks for your language. Check back after the next generation run."
+  review_instructions: "Check language naturalness, cultural fit, harm label, severity, and whether the response should be approved, rejected, flagged, or escalated."
+  candidate_heading: "Candidate Responses - select decision for each"

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AfriGuard - Login</title>
+  <title>{{ ui.login_title }}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -70,8 +70,8 @@
 <body>
   <div class="card">
     <div class="logo">
-      <h1>AfriGuard</h1>
-      <p>Safety Alignment Review Portal</p>
+      <h1>{{ ui.app_name }}</h1>
+      <p>{{ ui.login_subtitle }}</p>
     </div>
 
     {% if error %}
@@ -80,9 +80,9 @@
 
     <form method="POST" action="/login">
       <div class="form-group">
-        <label for="reviewer_id">Language To Review</label>
+        <label for="reviewer_id">{{ ui.language_select_label }}</label>
         <select name="reviewer_id" id="reviewer_id" required>
-          <option value="">Select your language</option>
+          <option value="">{{ ui.language_select_placeholder }}</option>
           {% for option in reviewer_options %}
           <option value="{{ option.reviewer_id }}">{{ option.flag }} {{ option.display_name }} Reviewer</option>
           {% endfor %}
@@ -93,7 +93,7 @@
         <label for="password">Admin Password</label>
         <input type="password" name="password" id="password" placeholder="Required for admin only">
       </div>
-      <button type="submit" class="btn">Sign In</button>
+      <button type="submit" class="btn">{{ ui.sign_in_button }}</button>
     </form>
   </div>
   <script>
