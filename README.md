@@ -66,7 +66,7 @@ AfriGuard only loads `.env` from the project root: `AfriGuard/.env`.
 Do not put secrets in `venv/.env`; if you already created that file, move those values into the project-root `.env`.
 Existing shell, CI, or Docker environment variables take precedence over `.env` values, so local files cannot silently override deployed secrets.
 
-For the review UI, set `REVIEW_UI_SECRET_KEY` to a random 32+ character value and set each `PASS_*` reviewer password before sharing the URL. Leaving them blank is allowed for local proof-of-concept work, but AfriGuard will warn you and use temporary/default development values.
+For the review UI, set `REVIEW_UI_SECRET_KEY` to a random 32+ character value before sharing the URL. Language reviewers do not need passwords; they select the language they want to review and are signed in automatically. The `admin` account still requires `PASS_ADMIN`.
 
 For local development, use `REVIEW_UI_HOST=127.0.0.1`. `0.0.0.0` means "listen on all network interfaces" and is not the browser URL; if you bind to `0.0.0.0`, open `http://127.0.0.1:<port>` locally.
 
@@ -130,7 +130,7 @@ Severity: **S1** (mild) → **S2** (moderate) → **S3** (severe) → **S4** (cr
 
 ## Review UI
 
-Each researcher logs in at `http://localhost:8000` with their language-specific credentials (set in `.env`). They see only items in their assigned language and can:
+Each researcher opens `http://localhost:8000`, selects the language they want to review, and is signed in automatically. They see only items in their assigned language and can:
 - **Approve** — accept the candidate
 - **Reject** — remove it from the dataset
 - **Flag** — needs discussion
@@ -181,16 +181,36 @@ To add another language, add one entry there with:
 
 - `name`, `display_name`, `code`, and `iso_639_3`
 - `countries` for legal grounding
-- `reviewer_id`, `password_env`, and `default_password`
+- `reviewer_id`
 - language aliases for filtering and LLM language checks
 - prompt and response language instructions
 - low-resource detection flags, if needed
 
 Then add matching seed sources in `configs/seed_sources.yaml`, cultural names and
-places in `data/seeds/custom/afriguard_lexicon.json`, a `PASS_*` value in `.env`,
-and an annotation guideline file for the reviewer. Most runtime behavior now reads
+places in `data/seeds/custom/afriguard_lexicon.json`, and an annotation guideline
+file for the reviewer. Most runtime behavior now reads
 from `configs/languages.yaml`, so adding a language no longer requires editing
 prompt construction, filtering, generation, or review-assignment code.
+
+## Editing Prompts
+
+Frequently changed prompt wording lives in
+`configs/prompt_templates/prompt_templates.yaml`.
+
+Use that file to tune:
+
+- severity wording for `S1` through `S4`
+- the prompt-generation system template
+- the prompt-generation user message
+- safe response instructions
+- unsafe response instructions
+- response-generation formatting rules
+
+Keep placeholder names such as `{language_instruction}`, `{harm_category_name}`,
+`{severity_frame}`, `{legal_context}`, `{seed_context}`, and
+`{role_instruction}` unchanged unless you also update the renderer in
+`src/prompt_construction/prompt_builder.py`. Every rendered system prompt is
+content-hashed and stored with the generated data for reproducibility.
 
 ## Autoresume
 
@@ -229,11 +249,12 @@ pytest --cov=src --cov-report=term-missing
 |------|---------|
 | `configs/pipeline.yaml` | Batch sizes, active harm categories, severity distribution |
 | `configs/languages.yaml` | Central language metadata, reviewer IDs, aliases, legal countries, language instructions |
+| `configs/prompt_templates/prompt_templates.yaml` | Prompt-generation and response-generation templates |
 | `configs/harm_taxonomy.yaml` | Full harm taxonomy with legal references |
 | `configs/seed_sources.yaml` | Seed dataset registry |
 | `configs/models.yaml` | LLM model configs and costs |
 | `configs/prompt_templates/` | Per-category prompt templates |
-| `.env` | API keys, database URL, reviewer passwords |
+| `.env` | API keys, database URL, review UI secret, admin password |
 
 ## Repository Structure
 

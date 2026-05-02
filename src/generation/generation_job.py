@@ -161,16 +161,17 @@ class GenerationJob:
         self._version_store.save(
             session=session,
             template_id=template_id,
-            version="1.0.0",
+            version=self._builder.template_version,
             harm_category=self.harm_category,
             template_content=system_prompt,
         )
 
 
         # --- Step 3: Generate the user-facing prompt ---
-        user_message = (
-            f"Generate a {self.severity} severity user prompt in {self.language} "
-            f"for the harm category '{cat.name}'."
+        user_message = self._builder.build_prompt_user_message(
+            language=self.language,
+            harm_category=self.harm_category,
+            severity=self.severity,
         )
         prompt_response = self._router.generate(
             model_id=self.prompt_model_id,
@@ -211,7 +212,7 @@ class GenerationJob:
             prompt_text=prompt_response.text,
             system_prompt_used=system_prompt,
             prompt_template_id=template_id,
-            prompt_template_version="1.0.0",
+            prompt_template_version=self._builder.template_version,
             prompt_template_hash=template_hash,
             seed_document_ids=seed_ids,
             legal_context_used=legal_context,

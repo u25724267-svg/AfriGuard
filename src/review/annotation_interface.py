@@ -1,17 +1,9 @@
 """
-AfriGuard — Review: AnnotationInterface
+AfriGuard - Review: AnnotationInterface
 
 Lightweight FastAPI web application for human review.
-Each researcher logs in with their language-specific credentials
-and sees only items in their assigned language.
-
-Routes:
-  GET  /           → login page
-  POST /login      → authenticate and set session cookie
-  GET  /review     → review queue for logged-in reviewer
-  POST /annotate   → submit annotation for a candidate
-  GET  /escalated  → senior review queue (admin only)
-  GET  /stats      → reviewer stats
+Researchers select the language they want to review and are signed in
+automatically. The admin account remains password-protected for escalations.
 """
 
 from __future__ import annotations
@@ -21,25 +13,23 @@ import os
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+import structlog
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
 
-from src.storage.db import (
-    SessionLocal,
-    AnnotationORM,
-    CandidateResponseORM,
-    GeneratedPromptORM,
-)
-from src.review.task_assigner import TaskAssigner
-from src.review.escalation_queue import EscalationQueue
 from src.config.env import load_project_env
 from src.config.languages import get_reviewer_accounts, get_reviewer_language
 from src.observability.logging_config import configure_logging
-
-import structlog
+from src.review.escalation_queue import EscalationQueue
+from src.review.task_assigner import TaskAssigner
+from src.storage.db import (
+    AnnotationORM,
+    CandidateResponseORM,
+    SessionLocal,
+)
 
 load_project_env()
 configure_logging()
@@ -51,9 +41,6 @@ logger = structlog.get_logger(__name__)
 
 app = FastAPI(title="AfriGuard Review UI", version="0.1.0")
 
-# BUG FIX: SECRET_KEY defaulting to "change-me" is insecure even for PoC.
-# We now require it to be explicitly set in any non-local environment.
-# In production (AFRIGUARD_ENV=production), missing SECRET_KEY is a hard error.
 _IS_PRODUCTION = os.environ.get("AFRIGUARD_ENV", "development").lower() == "production"
 SECRET_KEY = os.environ.get("REVIEW_UI_SECRET_KEY", "")
 _PLACEHOLDER_SECRET_KEYS = {
@@ -67,68 +54,47 @@ if not SECRET_KEY or SECRET_KEY in _PLACEHOLDER_SECRET_KEYS:
             "REVIEW_UI_SECRET_KEY environment variable is not set to a secure value. "
             "This is required in production. Set it to a random 32+ character string."
         )
-    # Development/PoC only: use a deterministic but non-trivial fallback
     import secrets as _secrets
+
     SECRET_KEY = _secrets.token_hex(32)
     logger.warning(
         "review_ui.insecure_secret_key",
-        message="REVIEW_UI_SECRET_KEY not set — using a per-process random key. "
-                "Sessions will not survive restarts. Set REVIEW_UI_SECRET_KEY for persistence.",
+        message=(
+            "REVIEW_UI_SECRET_KEY not set - using a per-process random key. "
+            "Sessions will not survive restarts. Set REVIEW_UI_SECRET_KEY for persistence."
+        ),
     )
 
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, max_age=28800)
 
-# Templates directory
 _TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "templates")
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 # ---------------------------------------------------------------------------
-# Reviewer credentials (hashed passwords, set via environment variables)
-# In production, replace with a proper auth system.
-# Default passwords match reviewer_id for PoC (researcher changes on first login).
+# Reviewer access
 # ---------------------------------------------------------------------------
-# BUG FIX: Static fallback passwords were always active, meaning the app
-# would start with known-plaintext credentials if the PASS_ env vars were
-# not set. In production mode we now fail-fast. In development, a clear
-# warning is emitted so reviewers know to set passwords before going live.
-def _load_reviewer_passwords() -> dict[str, str]:
-    """Load reviewer passwords from environment variables."""
-    password_env_map = {
-        account["reviewer_id"]: (account["password_env"], account["default_password"])
-        for account in get_reviewer_accounts()
-    }
-    password_env_map["admin"] = ("PASS_ADMIN", "admin_afriguard_poc")
 
-    passwords: dict[str, str] = {}
-    missing_in_prod: list[str] = []
-
-    for reviewer, (env_var, default) in password_env_map.items():
-        value = os.environ.get(env_var, "")
-        if value:
-            passwords[reviewer] = value
-        elif _IS_PRODUCTION:
-            missing_in_prod.append(env_var)
-        else:
-            # Development PoC: use fallback with a loud warning
-            logger.warning(
-                "review_ui.default_password_active",
-                reviewer=reviewer,
-                env_var=env_var,
-                message=f"{env_var} not set — using PoC default. Set before sharing the URL.",
-            )
-            passwords[reviewer] = default
-
-    if missing_in_prod:
-        raise RuntimeError(
-            f"Missing required environment variables in production mode: {missing_in_prod}. "
-            "Set all PASS_* variables before starting the review UI."
-        )
-
-    return passwords
-
-
-_REVIEWER_PASSWORDS = _load_reviewer_passwords()
 _REVIEWER_OPTIONS = get_reviewer_accounts()
+_REVIEWER_IDS = {account["reviewer_id"] for account in _REVIEWER_OPTIONS}
+
+
+def _load_admin_password() -> str:
+    """Load the admin password from PASS_ADMIN."""
+    value = os.environ.get("PASS_ADMIN", "")
+    if value:
+        return value
+    if _IS_PRODUCTION:
+        raise RuntimeError("PASS_ADMIN is required when AFRIGUARD_ENV=production.")
+
+    logger.warning(
+        "review_ui.default_admin_password_active",
+        env_var="PASS_ADMIN",
+        message="PASS_ADMIN not set - using PoC default. Set before sharing the URL.",
+    )
+    return "admin_afriguard_poc"
+
+
+_ADMIN_PASSWORD = _load_admin_password()
 
 _ASSIGNER = TaskAssigner()
 _ESCALATION = EscalationQueue()
@@ -154,14 +120,15 @@ def get_current_reviewer(request: Request) -> str | None:
     return request.session.get("reviewer_id")
 
 
-def require_login(request: Request) -> str:
-    reviewer_id = get_current_reviewer(request)
-    if not reviewer_id:
-        raise HTTPException(
-            status_code=status.HTTP_303_SEE_OTHER,
-            headers={"Location": "/"},
-        )
-    return reviewer_id
+def _hash_reviewer(reviewer_id: str) -> str:
+    """Hash the reviewer ID for anonymized storage."""
+    return hashlib.sha256(reviewer_id.encode()).hexdigest()[:16]
+
+
+def _reviewer_language(reviewer_id: str) -> str:
+    if reviewer_id == "admin":
+        return "all"
+    return get_reviewer_language(reviewer_id) or "unknown"
 
 
 # ---------------------------------------------------------------------------
@@ -184,12 +151,16 @@ async def login_page(request: Request):
 async def login(
     request: Request,
     reviewer_id: str = Form(...),
-    password: str = Form(...),
+    password: str = Form(default=""),
 ):
-    expected = _REVIEWER_PASSWORDS.get(reviewer_id)
-    if expected and password == expected:
+    if reviewer_id in _REVIEWER_IDS:
         request.session["reviewer_id"] = reviewer_id
-        logger.info("review_ui.login_success", reviewer_id=reviewer_id)
+        logger.info("review_ui.reviewer_login_success", reviewer_id=reviewer_id)
+        return RedirectResponse("/review", status_code=303)
+
+    if reviewer_id == "admin" and password == _ADMIN_PASSWORD:
+        request.session["reviewer_id"] = reviewer_id
+        logger.info("review_ui.admin_login_success")
         return RedirectResponse("/review", status_code=303)
 
     logger.warning("review_ui.login_failed", reviewer_id=reviewer_id)
@@ -222,7 +193,6 @@ async def review_queue(
     tasks = _ASSIGNER.get_pending_tasks(session=db, reviewer_id=reviewer_id, limit=10)
     pending_item_count = _ASSIGNER.count_pending_items(session=db, reviewer_id=reviewer_id)
 
-    # Stats for this reviewer
     annotated_count = (
         db.query(AnnotationORM)
         .filter(AnnotationORM.annotator_id == _hash_reviewer(reviewer_id))
@@ -291,7 +261,6 @@ async def submit_annotation(
     )
     db.add(ann)
 
-    # Update candidate status based on decision
     candidate = db.get(CandidateResponseORM, candidate_id)
     if candidate:
         if decision == "approve":
@@ -339,7 +308,6 @@ async def stats_page(
     if not reviewer_id:
         return RedirectResponse("/")
 
-    # Build per-language annotation stats
     from sqlalchemy import func
 
     rows = (
@@ -363,18 +331,3 @@ async def stats_page(
         name="stats.html",
         context={"stats": stats, "reviewer_id": reviewer_id},
     )
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _hash_reviewer(reviewer_id: str) -> str:
-    """Hash the reviewer ID for anonymized storage."""
-    return hashlib.sha256(reviewer_id.encode()).hexdigest()[:16]
-
-
-def _reviewer_language(reviewer_id: str) -> str:
-    if reviewer_id == "admin":
-        return "all"
-    return get_reviewer_language(reviewer_id) or "unknown"

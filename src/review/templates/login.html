@@ -80,7 +80,7 @@
 
     <form method="POST" action="/login">
       <div class="form-group">
-        <label for="reviewer_id">Reviewer Account</label>
+        <label for="reviewer_id">Language To Review</label>
         <select name="reviewer_id" id="reviewer_id" required>
           <option value="">Select your language</option>
           {% for option in reviewer_options %}
@@ -89,12 +89,27 @@
           <option value="admin">Admin Administrator</option>
         </select>
       </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" name="password" id="password" placeholder="Enter your review password" required>
+      <div class="form-group" id="admin-password-group" style="display: none;">
+        <label for="password">Admin Password</label>
+        <input type="password" name="password" id="password" placeholder="Required for admin only">
       </div>
       <button type="submit" class="btn">Sign In</button>
     </form>
   </div>
+  <script>
+    const reviewerSelect = document.getElementById("reviewer_id");
+    const passwordGroup = document.getElementById("admin-password-group");
+    const passwordInput = document.getElementById("password");
+
+    function updatePasswordVisibility() {
+      const isAdmin = reviewerSelect.value === "admin";
+      passwordGroup.style.display = isAdmin ? "block" : "none";
+      passwordInput.required = isAdmin;
+      if (!isAdmin) passwordInput.value = "";
+    }
+
+    reviewerSelect.addEventListener("change", updatePasswordVisibility);
+    updatePasswordVisibility();
+  </script>
 </body>
 </html>

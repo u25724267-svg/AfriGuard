@@ -1,9 +1,8 @@
 version: "1.0.0"
 description: >
   Central registry for languages supported by AfriGuard. To add a language,
-  add one entry here, add seed sources in configs/seed_sources.yaml, add
-  cultural entities in data/seeds/custom/afriguard_lexicon.json, and add the
-  reviewer password variable to .env.
+  add one entry here, add seed sources in configs/seed_sources.yaml, and add
+  cultural entities in data/seeds/custom/afriguard_lexicon.json.
 
 languages:
   - name: "hausa"
@@ -13,8 +12,6 @@ languages:
     region: "Nigeria / Niger / West Africa"
     countries: ["Nigeria"]
     reviewer_id: "reviewer_hausa"
-    password_env: "PASS_HAUSA"
-    default_password: "hausa_review_poc"
     flag: "NG"
     low_resource_detection: false
     char_ngram_similarity: false
@@ -34,8 +31,6 @@ languages:
     region: "South Africa (Limpopo)"
     countries: ["South Africa"]
     reviewer_id: "reviewer_sepedi"
-    password_env: "PASS_SEPEDI"
-    default_password: "sepedi_review_poc"
     flag: "ZA"
     low_resource_detection: true
     char_ngram_similarity: false
@@ -63,8 +58,6 @@ languages:
     region: "Malawi / Zambia / Mozambique"
     countries: ["Malawi"]
     reviewer_id: "reviewer_chichewa"
-    password_env: "PASS_CHICHEWA"
-    default_password: "chichewa_review_poc"
     flag: "MW"
     low_resource_detection: false
     char_ngram_similarity: false
@@ -83,8 +76,6 @@ languages:
     region: "South Africa (Limpopo)"
     countries: ["South Africa"]
     reviewer_id: "reviewer_northern_sotho"
-    password_env: "PASS_NORTHERN_SOTHO"
-    default_password: "nsotho_review_poc"
     flag: "ZA"
     low_resource_detection: true
     char_ngram_similarity: false
@@ -111,8 +102,6 @@ languages:
     region: "Malawi / Tanzania / Mozambique"
     countries: ["Malawi"]
     reviewer_id: "reviewer_yao"
-    password_env: "PASS_YAO"
-    default_password: "yao_review_poc"
     flag: "MW"
     low_resource_detection: true
     char_ngram_similarity: true
@@ -131,8 +120,6 @@ languages:
     region: "Nigeria / Benin / Togo"
     countries: ["Nigeria"]
     reviewer_id: "reviewer_yoruba"
-    password_env: "PASS_YORUBA"
-    default_password: "yoruba_review_poc"
     flag: "NG"
     low_resource_detection: false
     char_ngram_similarity: false
@@ -151,8 +138,6 @@ languages:
     region: "Zimbabwe / Mozambique / Southern Africa"
     countries: ["Zimbabwe"]
     reviewer_id: "reviewer_shona"
-    password_env: "PASS_SHONA"
-    default_password: "shona_review_poc"
     flag: "ZW"
     low_resource_detection: true
     char_ngram_similarity: false

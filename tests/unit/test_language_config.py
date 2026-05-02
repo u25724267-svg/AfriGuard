@@ -41,11 +41,11 @@ def test_generation_and_review_use_language_registry():
     assert GenerationJob._get_lang_code("shona") == "sn"
 
 
-def test_reviewer_accounts_include_password_env_metadata():
+def test_reviewer_accounts_include_login_metadata():
     accounts = {account["reviewer_id"]: account for account in get_reviewer_accounts()}
 
-    assert accounts["reviewer_sepedi"]["password_env"] == "PASS_SEPEDI"
-    assert accounts["reviewer_sepedi"]["default_password"] == "sepedi_review_poc"
+    assert accounts["reviewer_sepedi"]["language"] == "sepedi"
+    assert accounts["reviewer_sepedi"]["display_name"] == "Sepedi"
 
 
 def test_prompt_and_legal_context_use_language_registry():
