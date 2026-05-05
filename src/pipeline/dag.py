@@ -19,8 +19,10 @@ Usage:
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 import click
@@ -32,6 +34,33 @@ from src.observability.logging_config import configure_logging
 load_project_env()
 configure_logging()
 logger = structlog.get_logger(__name__)
+
+
+@contextmanager
+def _temporary_log_levels(levels: dict[str, int]):
+    previous = {}
+    for name, level in levels.items():
+        log = logging.getLogger(name)
+        previous[name] = log.level
+        log.setLevel(level)
+    try:
+        yield
+    finally:
+        for name, level in previous.items():
+            logging.getLogger(name).setLevel(level)
+
+
+_QUIET_GENERATION_LOGGERS = {
+    "src.generation.generation_job": logging.WARNING,
+    "src.generation.cost_tracker": logging.WARNING,
+    "src.prompt_construction.prompt_version_store": logging.WARNING,
+    "src.taxonomy.harm_registry": logging.WARNING,
+    "src.taxonomy.entity_sampler": logging.WARNING,
+    "src.prompt_construction.seed_context_injector": logging.WARNING,
+    "httpx": logging.WARNING,
+    "httpcore": logging.WARNING,
+    "openai": logging.WARNING,
+}
 
 # ---------------------------------------------------------------------------
 # CLI group
@@ -124,10 +153,11 @@ def ingest_seeds(language, max_samples, source_ids):
 @click.option("--category", "-c", default=None, help="Harm category ID (e.g. H01)")
 @click.option("--severity", "-s", default=None, help="Severity code (S1-S4)")
 @click.option("--n-prompts", "-n", default=5, show_default=True, help="Prompts per combination")
-@click.option("--model", default=None, help="Override default model (e.g. gpt-4o)")
+@click.option("--model", default=None, help="Override default model (e.g. gpt-5.4)")
 @click.option("--run-id", default=None, help="Reuse an existing pipeline run ID")
+@click.option("--progress/--no-progress", default=True, help="Show generation progress bar")
 @click.option("--dry-run", is_flag=True, help="Print config without calling API")
-def generate(language, category, severity, n_prompts, model, run_id, dry_run):
+def generate(language, category, severity, n_prompts, model, run_id, progress, dry_run):
     """Generate prompts and candidate responses using LLM."""
     import yaml
     from pathlib import Path
@@ -164,13 +194,18 @@ def generate(language, category, severity, n_prompts, model, run_id, dry_run):
                     click.echo(f"  Would generate: {lang} / {cat} / {sev}")
         return
 
-    from src.storage.db import SessionLocal, GeneratedPromptORM
+    from sqlalchemy import func
+    from src.storage.db import SessionLocal, GeneratedPromptORM, GenerationCostORM
     from src.generation.generation_job import GenerationJob
+    from tqdm import tqdm
 
     run_id = run_id or str(uuid.uuid4())
     click.echo(f"   Run ID: {run_id}\n")
 
     with SessionLocal() as session:
+        work_items = []
+        total_existing = 0
+        total_remaining = 0
         for lang in languages:
             for cat in categories:
                 for sev in severities:
@@ -186,17 +221,62 @@ def generate(language, category, severity, n_prompts, model, run_id, dry_run):
                         .count()
                     )
                     remaining = max(0, n_prompts - existing)
+                    total_existing += min(existing, n_prompts)
+                    total_remaining += remaining
+                    work_items.append((lang, cat, sev, existing, remaining))
+
+        total_prompts = total_existing + total_remaining
+        bar = tqdm(
+            total=total_prompts,
+            initial=total_existing,
+            desc="Generating prompts",
+            unit="prompt",
+            dynamic_ncols=True,
+            disable=not progress,
+        )
+        write_status = tqdm.write if progress else click.echo
+
+        def update_progress(lang: str, cat: str, sev: str):
+            bar.update(1)
+            total_cost, api_calls = (
+                session.query(
+                    func.coalesce(func.sum(GenerationCostORM.cost_usd), 0.0),
+                    func.count(GenerationCostORM.id),
+                )
+                .filter(GenerationCostORM.run_id == run_id)
+                .one()
+            )
+            bar.set_postfix(
+                {
+                    "lang": lang,
+                    "cat": cat,
+                    "sev": sev,
+                    "model": model_id,
+                    "cost": f"${float(total_cost):.2f}",
+                    "api": int(api_calls),
+                },
+                refresh=True,
+            )
+
+        try:
+            quiet_context = (
+                _temporary_log_levels(_QUIET_GENERATION_LOGGERS)
+                if progress
+                else _temporary_log_levels({})
+            )
+            with quiet_context:
+                for lang, cat, sev, existing, remaining in work_items:
                     if remaining == 0:
-                        click.secho(
-                            f"  Skipping {lang} / {cat} / {sev}: {existing}/{n_prompts} prompts already generated",
-                            fg="cyan",
-                        )
                         continue
 
-                    click.echo(
-                        f"  Generating {lang} / {cat} / {sev} "
-                        f"({remaining} remaining, {existing} existing)…",
-                        nl=False,
+                    bar.set_postfix(
+                        {
+                            "lang": lang,
+                            "cat": cat,
+                            "sev": sev,
+                            "model": model_id,
+                        },
+                        refresh=True,
                     )
                     try:
                         job = GenerationJob(
@@ -207,10 +287,17 @@ def generate(language, category, severity, n_prompts, model, run_id, dry_run):
                             n_candidates=n_candidates,
                             run_id=run_id,
                         )
-                        prompt_ids = job.run(session=session, n_prompts=remaining)
-                        click.secho(f" [+] {len(prompt_ids)} prompts", fg="green")
+                        job.run(
+                            session=session,
+                            n_prompts=remaining,
+                            progress_callback=lambda _prompt_id, lang=lang, cat=cat, sev=sev: update_progress(
+                                lang, cat, sev
+                            ),
+                        )
                     except Exception as e:
-                        click.secho(f" [-] {e}", fg="red")
+                        write_status(f"  [-] {lang} / {cat} / {sev}: {e}")
+        finally:
+            bar.close()
 
     click.secho(f"\n[OK] Generation complete. Run ID: {run_id}", fg="green")
 
@@ -551,10 +638,11 @@ def resume_status(run_id):
 @click.option("--language", "-l", default=None)
 @click.option("--version", "-v", default="0.1.0")
 @click.option("--n-prompts", "-n", default=5)
+@click.option("--model", default=None, help="Override default generation model")
 @click.option("--run-id", default=None, help="Resume or create a run with this ID")
 @click.option("--resume", is_flag=True, help="Resume the latest incomplete run, or --run-id if provided")
 @click.pass_context
-def run_all(ctx, language, version, n_prompts, run_id, resume):
+def run_all(ctx, language, version, n_prompts, model, run_id, resume):
     """Run the full pipeline end-to-end (excluding human review)."""
     click.echo("[>>] Running full AfriGuard pipeline...\n")
 
@@ -618,8 +706,9 @@ def run_all(ctx, language, version, n_prompts, run_id, resume):
             category=None,
             severity=None,
             n_prompts=n_prompts,
-            model=None,
+            model=model,
             run_id=active_run_id,
+            progress=True,
             dry_run=False,
         ),
     )
@@ -629,7 +718,6 @@ def run_all(ctx, language, version, n_prompts, run_id, resume):
             filter_candidates,
             language=language,
             run_id=active_run_id,
-            retry_language_fail=False,
         ),
     )
     invoke_resumable("assign_review", lambda: ctx.invoke(assign_review))
@@ -661,6 +749,36 @@ def run_all(ctx, language, version, n_prompts, run_id, resume):
 # review-ui
 # ---------------------------------------------------------------------------
 
+@cli.command("monitor")
+@click.option("--host", default=None)
+@click.option("--port", default=None, type=int)
+@click.option("--auto-port", is_flag=True, help="Use the next available port if the requested port is busy")
+def monitor(host, port, auto_port):
+    """Start the pipeline progress monitor web app."""
+    import uvicorn
+    from src.pipeline.progress_api import app
+
+    _host = host or os.environ.get("PIPELINE_MONITOR_HOST", "127.0.0.1")
+    _port = port or int(os.environ.get("PIPELINE_MONITOR_PORT", "8010"))
+
+    if auto_port:
+        while _port < 9000 and not _port_available(_host, _port):
+            _port += 1
+    elif not _port_available(_host, _port):
+        click.secho(
+            f"[ERROR] Port {_port} is already in use on {_host}.\n"
+            f"Try: afriguard monitor --port {_port + 1}\n"
+            f"Or:  afriguard monitor --auto-port",
+            fg="red",
+        )
+        raise click.Abort()
+
+    browser_url = _browser_url(_host, _port)
+    click.secho(f"[WEB] Starting pipeline monitor on {_host}:{_port}", fg="cyan")
+    click.secho(f"[WEB] Open this in your browser: {browser_url}", fg="green")
+    uvicorn.run(app, host=_host, port=_port)
+
+
 @cli.command("review-ui")
 @click.option("--host", default=None)
 @click.option("--port", default=None, type=int)
@@ -685,13 +803,13 @@ def review_ui(host, port, auto_port):
         )
         raise click.Abort()
 
-    browser_url = _review_ui_browser_url(_host, _port)
+    browser_url = _browser_url(_host, _port)
     click.secho(f"[WEB] Starting review UI on {_host}:{_port}", fg="cyan")
     click.secho(f"[WEB] Open this in your browser: {browser_url}", fg="green")
     uvicorn.run(app, host=_host, port=_port)
 
 
-def _review_ui_browser_url(host: str, port: int) -> str:
+def _browser_url(host: str, port: int) -> str:
     """Return a browser-friendly URL for the configured bind host."""
     browser_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
     return f"http://{browser_host}:{port}"

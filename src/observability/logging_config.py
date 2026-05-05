@@ -28,6 +28,10 @@ def configure_logging() -> None:
         stream=sys.stdout,
         level=getattr(logging, log_level, logging.INFO),
     )
+    if log_level not in {"DEBUG", "TRACE"}:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
+        logging.getLogger("httpcore").setLevel(logging.WARNING)
+        logging.getLogger("openai").setLevel(logging.WARNING)
 
     shared_processors = [
         structlog.contextvars.merge_contextvars,

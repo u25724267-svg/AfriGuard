@@ -20,7 +20,7 @@ from __future__ import annotations
 import random
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Callable
 
 import structlog
 from sqlalchemy.orm import Session
@@ -57,7 +57,7 @@ class GenerationJob:
         language: str,
         harm_category: str,
         severity: str,
-        model_id: str = "gpt-4o",
+        model_id: str = "gpt-5.4",
         n_candidates: int = 4,
         run_id: str | None = None,
         prompt_model_id: str | None = None,
@@ -78,7 +78,12 @@ class GenerationJob:
         self._registry = get_registry()
         self._generation_config = load_generation_config()
 
-    def run(self, session: Session, n_prompts: int = 1) -> list[str]:
+    def run(
+        self,
+        session: Session,
+        n_prompts: int = 1,
+        progress_callback: Callable[[str], None] | None = None,
+    ) -> list[str]:
         """
         Generate n_prompts prompts with n_candidates responses each.
 
@@ -103,6 +108,8 @@ class GenerationJob:
             try:
                 prompt_id = self._generate_one(session, cat)
                 prompt_ids.append(prompt_id)
+                if progress_callback:
+                    progress_callback(prompt_id)
             except Exception as e:
                 logger.error(
                     "generation_job.prompt_failed",

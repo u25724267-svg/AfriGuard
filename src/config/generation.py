@@ -87,7 +87,7 @@ def load_generation_config(
     return GenerationConfig(
         default_model=_env_str(
             "PIPELINE_DEFAULT_MODEL",
-            str(data.get("default_model", "gpt-4o")),
+            str(data.get("default_model", "gpt-5.4")),
         ),
         candidates_per_prompt=_env_int(
             "PIPELINE_CANDIDATES_PER_PROMPT",

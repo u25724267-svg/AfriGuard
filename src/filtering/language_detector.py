@@ -222,7 +222,7 @@ class LanguageDetector:
             )
             user = f"What language is the following text written in?\n\nText: {text[:300]}"
             resp = self._llm_router.generate(
-                model_id="gpt-4o",
+                model_id="gpt-5.4",
                 system_prompt=system,
                 user_message=user,
                 temperature=0.0,

@@ -2,7 +2,7 @@
 AfriGuard — Generation: ModelRouter
 
 Abstraction layer over multiple LLM providers.
-Primary: OpenAI (GPT-4o)
+Primary: OpenAI (GPT-5.4)
 Secondary: Anthropic, Google (configured via models.yaml)
 
 Implements retry with exponential backoff via tenacity.
@@ -20,10 +20,11 @@ import yaml
 import structlog
 from tenacity import (
     retry,
+    RetryCallState,
     retry_if_exception_type,
+    retry_if_exception,
     stop_after_attempt,
     wait_exponential,
-    before_sleep_log,
 )
 
 from src.config.env import load_project_env
@@ -45,6 +46,26 @@ def _load_model_configs() -> dict[str, Any]:
     with open(_MODELS_PATH, encoding="utf-8") as f:
         data = yaml.safe_load(f)
     return data.get("models", {})
+
+
+def _is_gpt5_family(model_name: str) -> bool:
+    return model_name.startswith("gpt-5")
+
+
+def _is_retryable_exception(exc: BaseException) -> bool:
+    status_code = getattr(exc, "status_code", None)
+    if status_code in {400, 401, 403, 404}:
+        return False
+    return True
+
+
+def _log_retry(retry_state: RetryCallState) -> None:
+    exc = retry_state.outcome.exception() if retry_state.outcome else None
+    logger.warning(
+        "model_router.retrying",
+        attempt=retry_state.attempt_number,
+        error=str(exc) if exc else None,
+    )
 
 
 class LLMResponse:
@@ -74,7 +95,7 @@ class ModelRouter:
     Usage:
         router = ModelRouter()
         response = router.generate(
-            model_id="gpt-4o",
+            model_id="gpt-5.4",
             system_prompt="...",
             user_message="...",
         )
@@ -152,10 +173,10 @@ class ModelRouter:
         return round(input_cost + output_cost, 6)
 
     @retry(
-        retry=retry_if_exception_type(Exception),
+        retry=retry_if_exception(_is_retryable_exception),
         wait=wait_exponential(multiplier=1, min=_WAIT_MIN_SECONDS, max=_WAIT_MAX_SECONDS),
         stop=stop_after_attempt(_MAX_ATTEMPTS),
-        before_sleep=before_sleep_log(logger, "warning"),  # type: ignore
+        before_sleep=_log_retry,
         reraise=True,
     )
     def _generate_openai(
@@ -168,16 +189,39 @@ class ModelRouter:
         max_tokens: int,
     ) -> LLMResponse:
         client = self._get_openai()
-        response = client.chat.completions.create(
-            model=config["model_id"],
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message},
-            ],
-            temperature=temperature,
-            max_tokens=max_tokens,
-            frequency_penalty=config.get("frequency_penalty", 0.3),
-        )
+        api_model = config["model_id"]
+        messages = [
+            {"role": "developer" if _is_gpt5_family(api_model) else "system", "content": system_prompt},
+            {"role": "user", "content": user_message},
+        ]
+        request: dict[str, Any] = {
+            "model": api_model,
+            "messages": messages,
+        }
+        if _is_gpt5_family(api_model):
+            request["max_completion_tokens"] = max_tokens
+            if config.get("reasoning_effort"):
+                request["reasoning_effort"] = config["reasoning_effort"]
+        else:
+            request.update(
+                {
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "frequency_penalty": config.get("frequency_penalty", 0.3),
+                }
+            )
+
+        try:
+            response = client.chat.completions.create(**request)
+        except Exception as e:
+            logger.error(
+                "model_router.openai_error",
+                model=model_id,
+                api_model=api_model,
+                status_code=getattr(e, "status_code", None),
+                error=str(e),
+            )
+            raise
         text = response.choices[0].message.content or ""
         pt = response.usage.prompt_tokens if response.usage else 0
         ct = response.usage.completion_tokens if response.usage else 0
