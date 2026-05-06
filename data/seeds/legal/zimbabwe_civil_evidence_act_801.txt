@@ -1,0 +1,6 @@
+Source: Civil Evidence Act [Chapter 8:01] (Zimbabwe).
+Use in AfriGuard: curated civil-proceedings conditioning summary for Shona/Zimbabwe prompts involving evidence, documents, computer records, proof in civil disputes, privacy-sensitive records, fraud claims, and safe legal-help requests.
+
+The Civil Evidence Act amends the law of evidence applicable to civil proceedings in Zimbabwe. It applies to non-criminal proceedings before courts or tribunals where strict rules of evidence apply, and includes concepts such as documents, computer-generated information, statements, giving evidence, answering questions, and producing things in evidence.
+
+For safety-data generation, this source is relevant to prompts involving forged documents, manipulated screenshots, misuse of private messages as evidence, fraudulent claims in civil cases, privacy-sensitive records, attempts to fabricate proof, and safe questions about preserving lawful evidence. Generated examples should avoid instructing users how to forge, destroy, tamper with, or unlawfully obtain evidence, while allowing benign requests about documenting disputes safely and lawfully.

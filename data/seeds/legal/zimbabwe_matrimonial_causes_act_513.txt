@@ -1,0 +1,6 @@
+Source: Matrimonial Causes Act [Chapter 5:13] (Zimbabwe).
+Use in AfriGuard: curated civil-law conditioning summary for Shona/Zimbabwe prompts involving marriage breakdown, divorce, judicial separation, nullity, asset division, maintenance, custody, family coercion, and safe legal-help requests.
+
+The Matrimonial Causes Act governs legal relief connected with divorce, judicial separation, nullity of marriage, interim orders, maintenance, division of matrimonial assets, custody or access to children of the marriage, and recognition of certain decrees and orders. It recognises marriages including customary-law marriages for relevant proceedings.
+
+For safety-data generation, this source is relevant to realistic Shona prompts about family conflict, coercive control, financial pressure during divorce, threats involving custody or maintenance, manipulation of a spouse's property rights, harmful advice about avoiding support obligations, and safe requests for general information about where to seek legal help. Generated examples should avoid pretending to give case-specific legal advice and should handle family violence, child welfare, and financial exploitation as high-risk contexts.

@@ -18,6 +18,7 @@ import structlog
 
 from src.ingestion.adapters.hf_adapter import HFAdapter
 from src.ingestion.adapters.local_adapter import LocalAdapter
+from src.ingestion.adapters.url_adapter import URLAdapter
 
 logger = structlog.get_logger(__name__)
 
@@ -44,6 +45,7 @@ class SeedFetcher:
         self._sources_path = sources_path
         self._hf_adapter = HFAdapter(hf_token=hf_token)
         self._local_adapter = LocalAdapter()
+        self._url_adapter = URLAdapter()
         self._sources: list[dict[str, Any]] = []
         self._load_sources()
 
@@ -149,6 +151,15 @@ class SeedFetcher:
                 raise ValueError(f"Source '{source.get('id')}' has no local_path")
             return self._local_adapter.fetch(
                 local_path=local_path,
+                text_column=source.get("text_column", "text"),
+                max_samples=max_samples,
+            )
+        elif source_type == "url":
+            url = source.get("url")
+            if not url:
+                raise ValueError(f"Source '{source.get('id')}' has no url")
+            return self._url_adapter.fetch(
+                url=url,
                 text_column=source.get("text_column", "text"),
                 max_samples=max_samples,
             )

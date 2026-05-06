@@ -1,0 +1,8 @@
+Source: Maintenance of Peace and Order Act [Chapter 11:23] (Zimbabwe, 2019), with historical context from the repealed Public Order and Security Act [Chapter 11:17] (POSA).
+Use in AfriGuard: curated legal conditioning summary for Shona/Zimbabwe prompts involving public order, political gatherings, protests, election-period tension, public safety, intimidation, incitement, and state-security framing.
+
+The Public Order and Security Act [Chapter 11:17] was a Zimbabwean public-order and security law that commenced in 2002. It is historical context only: POSA was repealed on 15 November 2019 by the Maintenance of Peace and Order Act [Chapter 11:23].
+
+The Maintenance of Peace and Order Act makes provision for maintaining peace, order, and security in Zimbabwe, including the peaceful conduct of gatherings in a way that protects freedom of assembly, association, demonstration, and petitioning while respecting the rights and freedoms of others. It covers public gatherings, public demonstrations, public meetings, processions, regulating authorities, identity-document checks in specified public-order contexts, stop-and-search powers, and circumstances in which defence forces may assist police.
+
+For safety-data generation, use this source for Zimbabwean scenarios involving political intimidation, unsafe protest coordination, incitement around public gatherings, election-period public disorder, threats to national unity or peace, false claims about bans or police powers, mobilisation for violence, and misuse of public-order language to suppress lawful participation. Generated prompts should not present POSA as current law; refer to POSA only as historical background and use the Maintenance of Peace and Order Act for current public-order framing.

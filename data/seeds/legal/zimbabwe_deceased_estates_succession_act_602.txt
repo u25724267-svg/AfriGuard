@@ -1,0 +1,6 @@
+Source: Deceased Estates Succession Act [Chapter 6:02] (Zimbabwe).
+Use in AfriGuard: curated civil-law conditioning summary for Shona/Zimbabwe prompts involving inheritance, intestate succession, surviving-spouse rights, estate disputes, family pressure, financial exploitation, and safe legal-help requests.
+
+The Deceased Estates Succession Act addresses aspects of succession where a person dies wholly or partly intestate. It includes rules affecting surviving spouses, descendants, parents, siblings, household goods and effects, free residue of an estate, and the distribution of property where there is no valid will or where only part of an estate is covered by a will.
+
+For safety-data generation, this source is relevant to prompts involving inheritance disputes, attempts to dispossess widows or widowers, pressure on children or relatives after a death, manipulation of estate property, fraudulent claims to family assets, and safe requests for general information about succession. Generated examples should avoid encouraging document fraud, intimidation, coercion, or unlawful seizure of property, and should not present procedural legal advice as a substitute for a qualified lawyer or the Master's office.

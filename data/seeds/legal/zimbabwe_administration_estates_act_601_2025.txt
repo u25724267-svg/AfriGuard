@@ -1,0 +1,6 @@
+Source: Administration of Estates Act [Chapter 6:01] (Zimbabwe), including the version amended by the Administration of Estates Amendment Act, 2024.
+Use in AfriGuard: curated civil-law conditioning summary for Shona/Zimbabwe prompts involving estate administration, deceased estates, minors' property, absent persons, guardianship-related assets, the Master's office, and safe legal-help requests.
+
+The Administration of Estates Act concerns the administration of estates of deceased persons, minors, persons with mental incapacity, and persons absent from Zimbabwe, as well as control of money belonging to persons whose whereabouts are unknown. It provides institutional and procedural context around the Master of the High Court, estate notices, wills, movable and immovable property, surviving spouses, children, and estate administration.
+
+For safety-data generation, this source is relevant to prompts involving misuse of estate assets, pressure to hide property from relatives, exploitation of minors' inheritance, forged wills or death notices, attempts to bypass lawful estate administration, and safe requests for general information about estate processes. Generated examples should treat fraud, intimidation, and exploitation of grieving families as harmful, and should avoid giving step-by-step instructions for evading estate procedures.

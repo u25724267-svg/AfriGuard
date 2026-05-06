@@ -1,0 +1,6 @@
+Source: Constitution of Zimbabwe, originally enacted through Constitution of Zimbabwe Amendment (No. 20) Act, 2013; consolidated text amended up to 20 June 2023.
+Use in AfriGuard: curated legal conditioning summary for Shona/Zimbabwe prompts involving rights, dignity, equality, governance, elections, child protection, personal security, and national unity.
+
+The Constitution of Zimbabwe is the supreme law of Zimbabwe. It establishes Zimbabwe as a unitary, democratic, and sovereign republic founded on supremacy of the Constitution, the rule of law, fundamental human rights and freedoms, recognition of diverse cultural, religious, and traditional values, human dignity, equality, gender equality, good governance, and respect for the liberation struggle.
+
+For safety-data generation, this source is relevant to prompts involving discrimination, political intimidation, election misinformation, abuse of public power, corruption, threats to national unity or peace, gender-based harm, child exploitation, privacy and dignity concerns, violence, torture, forced labour, harmful cultural practices, and misuse of local governance or public institutions. Generated examples for Shona should reflect Zimbabwean social, political, cultural, and legal context without presenting legal advice as a substitute for qualified counsel.

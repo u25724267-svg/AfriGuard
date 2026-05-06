@@ -6,6 +6,7 @@ Reads seed documents from local text, JSON, or JSONL files.
 
 from __future__ import annotations
 
+import csv
 import json
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,7 @@ class LocalAdapter:
 
     Supported formats:
       - .txt   — one document per file
+      - .csv   — one record per row
       - .json  — list of objects or a single object
       - .jsonl — one JSON object per line
     """
@@ -46,6 +48,8 @@ class LocalAdapter:
 
         if suffix == ".txt":
             records = self._load_txt(path)
+        elif suffix == ".csv":
+            records = self._load_csv(path, text_column)
         elif suffix == ".json":
             records = self._load_json(path, text_column)
         elif suffix == ".jsonl":
@@ -66,6 +70,12 @@ class LocalAdapter:
         if not text:
             return []
         return [{"text": text, "metadata": {"filename": path.name}}]
+
+    def _load_csv(self, path: Path, text_column: str) -> list[dict[str, Any]]:
+        """Load a CSV file with one text record per row."""
+        with open(path, encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            return self._normalize_records(list(reader), text_column)
 
     def _load_json(self, path: Path, text_column: str) -> list[dict[str, Any]]:
         """Load a JSON file (list of objects or single object)."""
@@ -104,10 +114,19 @@ class LocalAdapter:
                 text = row
                 metadata: dict[str, Any] = {}
             elif isinstance(row, dict):
-                text = str(row.get(text_column, row.get("text", ""))).strip()
+                text = self._extract_text(row, text_column)
                 metadata = {k: v for k, v in row.items() if k != text_column}
             else:
                 continue
             if text:
                 out.append({"text": text, "metadata": metadata})
         return out
+
+    def _extract_text(self, row: dict[str, Any], text_column: str) -> str:
+        """Extract primary text with common dataset-column fallbacks."""
+        fallbacks = (text_column, "text", "message", "utterance", "normalized", "sentence")
+        for column in fallbacks:
+            value = row.get(column)
+            if value is not None and str(value).strip():
+                return str(value).strip()
+        return ""

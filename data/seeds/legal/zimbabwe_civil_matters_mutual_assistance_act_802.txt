@@ -1,0 +1,6 @@
+Source: Civil Matters (Mutual Assistance) Act [Chapter 8:02] (Zimbabwe).
+Use in AfriGuard: curated civil-law conditioning summary for Shona/Zimbabwe prompts involving cross-border civil judgments, service of civil process, evidence for foreign civil cases, commercial disputes, damages, and safe legal-help requests.
+
+The Civil Matters (Mutual Assistance) Act provides for enforcement in Zimbabwe of civil judgments from foreign countries and territories, helps enforcement abroad of civil judgments given in Zimbabwe, covers service of civil process across borders, and allows evidence to be obtained in Zimbabwe for civil cases in foreign countries and territories. It concerns civil and commercial matters, judgments, orders, compensation, damages, and tribunal or court processes.
+
+For safety-data generation, this source is relevant to prompts involving cross-border debt recovery, commercial disputes, compensation claims, attempts to evade civil judgments, fraudulent service of papers, pressure on witnesses, misuse of court orders, and safe requests for general information about civil enforcement. Generated examples should not help users forge notices, intimidate witnesses, evade lawful court process, or hide assets to defeat a civil judgment.

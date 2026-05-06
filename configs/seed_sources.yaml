@@ -163,6 +163,178 @@ sources:
     license: "CC BY 4.0"
     notes: "Used as a Shona/Zimbabwe context seed where available in the upstream corpus"
 
+  - id: "zimbabwe_constitution"
+    name: "Constitution of Zimbabwe Legal Context"
+    description: >
+      Curated legal-context summary from the Constitution of Zimbabwe for
+      Shona/Zimbabwe safety-data generation.
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_constitution_2023.txt"
+    fallback_url: "https://www.veritaszim.net/node/6427"
+    languages: ["shona"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H06", "H07", "H09", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: >
+      Uses a concise local conditioning summary. Veritas provides a consolidated
+      version amended up to 20 June 2023; ZimLII also hosts the 2013 Act text.
+
+  - id: "zimbabwe_freedom_information_aippa"
+    name: "Zimbabwe Freedom of Information and AIPPA Context"
+    description: >
+      Current Zimbabwe access-to-information and privacy framing from the
+      Freedom of Information Act, with AIPPA preserved as repealed historical
+      context.
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_freedom_information_aippa_context.txt"
+    fallback_url: "https://zimlii.org/akn/zw/act/2020/1/eng@2020-07-01"
+    languages: ["shona"]
+    harm_domains: ["H03", "H04", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: >
+      ZimLII marks AIPPA [Chapter 10:27] as repealed on 1 July 2020 by the
+      Freedom of Information Act [Chapter 10:33]. Use AIPPA only as historical
+      context; use Freedom of Information Act for current-law framing.
+
+  - id: "zimbabwe_public_order_mopa_posa"
+    name: "Zimbabwe Public Order and POSA Context"
+    description: >
+      Current Zimbabwe public-order framing from the Maintenance of Peace and
+      Order Act, with POSA preserved as repealed historical context.
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_public_order_mopa_posa_context.txt"
+    fallback_url: "https://zimlii.org/akn/zw/act/2019/9/eng@2019-11-15"
+    languages: ["shona"]
+    harm_domains: ["H01", "H04", "H09", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: >
+      ZimLII marks POSA [Chapter 11:17] as repealed on 15 November 2019 by the
+      Maintenance of Peace and Order Act [Chapter 11:23]. Use POSA only as
+      historical context; use MOPA for current public-order framing.
+
+  - id: "zimbabwe_childrens_act"
+    name: "Zimbabwe Children's Act Legal Context"
+    description: >
+      Curated child-protection legal context from Zimbabwe's Children's Act
+      [Chapter 5:06], including the Children's Amendment Act, 2023.
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_childrens_act_506_2023.txt"
+    fallback_url: "https://zimlii.org/akn/zw/act/2023/8/eng@2023-07-19/source"
+    languages: ["shona"]
+    harm_domains: ["H02", "H06", "H07", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: >
+      ZimLII hosts the Children’s Act [Chapter 5:06] and the Children’s
+      Amendment Act, 2023. Use this source for current Shona/Zimbabwe
+      child-safety and child-welfare grounding.
+
+  - id: "zimbabwe_matrimonial_causes_act"
+    name: "Zimbabwe Matrimonial Causes Act Legal Context"
+    description: >
+      Curated civil/family-law context from Zimbabwe's Matrimonial Causes Act
+      [Chapter 5:13].
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_matrimonial_causes_act_513.txt"
+    fallback_url: "https://zimlii.org/akn/zw/act/1985/33"
+    languages: ["shona"]
+    harm_domains: ["H02", "H06", "H07", "H11", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: "Family-law grounding for divorce, maintenance, custody, asset division, coercion, and safe legal-help prompts."
+
+  - id: "zimbabwe_deceased_estates_succession_act"
+    name: "Zimbabwe Deceased Estates Succession Act Legal Context"
+    description: >
+      Curated inheritance-law context from Zimbabwe's Deceased Estates
+      Succession Act [Chapter 6:02].
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_deceased_estates_succession_act_602.txt"
+    fallback_url: "https://zimlii.org/akn/zw/act/1873/26/eng@2016-12-31"
+    languages: ["shona"]
+    harm_domains: ["H05", "H07", "H11", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: "Inheritance and intestate-succession grounding for estate disputes, widows/widowers, family pressure, and safe legal-help prompts."
+
+  - id: "zimbabwe_administration_estates_act"
+    name: "Zimbabwe Administration of Estates Act Legal Context"
+    description: >
+      Curated estate-administration context from Zimbabwe's Administration of
+      Estates Act [Chapter 6:01], including the 2024 amendment.
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_administration_estates_act_601_2025.txt"
+    fallback_url: "https://zimlii.org/akn/zw/act/ord/1907/6/eng@2025-02-24"
+    languages: ["shona"]
+    harm_domains: ["H05", "H06", "H07", "H11", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: "Estate-administration grounding for deceased estates, minors' property, forged wills, asset hiding, and safe legal-help prompts."
+
+  - id: "zimbabwe_labour_act"
+    name: "Zimbabwe Labour Act Legal Context"
+    description: >
+      Curated employment-law context from Zimbabwe's Labour Act [Chapter 28:01].
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_labour_act_2801.txt"
+    fallback_url: "https://zimlii.org/akn/zw/act/1985/16"
+    languages: ["shona"]
+    harm_domains: ["H01", "H02", "H05", "H07", "H11", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: "Employment-law grounding for unfair labour practices, wage abuse, workplace harassment, discrimination, and safe legal-help prompts."
+
+  - id: "zimbabwe_civil_evidence_act"
+    name: "Zimbabwe Civil Evidence Act Legal Context"
+    description: >
+      Curated civil-proceedings evidence context from Zimbabwe's Civil Evidence
+      Act [Chapter 8:01].
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_civil_evidence_act_801.txt"
+    fallback_url: "https://zimlii.org/akn/zw/act/1992/15/eng@2016-12-31"
+    languages: ["shona"]
+    harm_domains: ["H03", "H05", "H11", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: "Evidence grounding for documents, computer records, forged proof, privacy-sensitive records, fraud claims, and safe legal-help prompts."
+
+  - id: "zimbabwe_civil_matters_mutual_assistance_act"
+    name: "Zimbabwe Civil Matters Mutual Assistance Act Legal Context"
+    description: >
+      Curated cross-border civil-procedure context from Zimbabwe's Civil Matters
+      (Mutual Assistance) Act [Chapter 8:02].
+    type: "local"
+    local_path: "data/seeds/legal/zimbabwe_civil_matters_mutual_assistance_act_802.txt"
+    fallback_url: "https://zimlii.org/akn/zw/act/1995/14/eng@2016-12-31"
+    languages: ["shona"]
+    harm_domains: ["H05", "H11", "context"]
+    text_column: "text"
+    license: "Public legal text; verify official redistribution terms"
+    notes: "Civil-enforcement grounding for foreign judgments, process service, witness pressure, asset hiding, damages, and safe legal-help prompts."
+
+  - id: "shona_slang_conversational_ai"
+    name: "Shona Slang Conversational AI"
+    description: >
+      Shona-English slang and code-mixed conversational utterances from
+      "Advancing Conversational AI with Shona Slang: A Dataset and Hybrid Model
+      for Digital Inclusion"; annotated for intent, sentiment, dialogue acts,
+      code-mixing, and tone.
+    enabled: false
+    type: "url"
+    url: "https://raw.githubusercontent.com/HappymoreMasoka/Working_with_shona-slang/main/slang_dataset_with_contexts_and_intent.csv"
+    fallback_url: "https://github.com/HappymoreMasoka/Working_with_shona-slang"
+    languages: ["shona"]
+    harm_domains: ["H05", "H07", "context"]
+    text_column: "message"
+    license: "Unspecified; verify with dataset owner before redistribution"
+    notes: >
+      Public GitHub release associated with arXiv:2509.14249. Disabled by
+      default because the repository does not publish an explicit data license.
+      Enable after license/permission review. Useful for informal Shona slang,
+      code-mixing, finance-intent examples, and emotionally colored dialogue.
+
   - id: "custom_afriguard_lexicon"
     name: "AfriGuard Cultural Lexicon"
     description: "Hand-curated list of culturally authentic names, places, and expressions per language"

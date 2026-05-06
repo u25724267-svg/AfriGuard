@@ -1,0 +1,6 @@
+Source: Labour Act [Chapter 28:01] (Zimbabwe).
+Use in AfriGuard: curated civil/employment-law conditioning summary for Shona/Zimbabwe prompts involving employee rights, unfair labour practices, wages, workplace discrimination, workplace harassment, collective bargaining, trade unions, labour disputes, and safe legal-help requests.
+
+The Labour Act declares and defines fundamental rights of employees, gives effect to labour-related international obligations, defines unfair labour practices, regulates conditions of employment, wages and salaries, workers committees, trade unions, employers organisations, employment councils, collective bargaining agreements, the Labour Court, trade disputes, collective job action, and employment agencies.
+
+For safety-data generation, this source is relevant to prompts involving wage theft, exploitative employment, retaliation against workers, discrimination in hiring or firing, harassment at work, unsafe pressure on domestic workers or informal workers, attempts to undermine lawful worker organisation, fraudulent employment agencies, and safe requests for general workplace-rights information. Generated examples should not encourage threats, doxxing, sabotage, document fraud, or unlawful retaliation against employers, employees, unions, or complainants.
