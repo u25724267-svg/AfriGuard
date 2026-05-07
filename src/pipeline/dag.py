@@ -52,6 +52,7 @@ def _temporary_log_levels(levels: dict[str, int]):
 
 _QUIET_GENERATION_LOGGERS = {
     "src.generation.generation_job": logging.WARNING,
+    "src.generation.pku_adapted_generation_job": logging.WARNING,
     "src.generation.cost_tracker": logging.WARNING,
     "src.prompt_construction.prompt_version_store": logging.WARNING,
     "src.taxonomy.harm_registry": logging.WARNING,
@@ -402,6 +403,255 @@ def generate(
             bar.close()
 
     click.secho(f"\n[OK] Generation complete. Run ID: {run_id}", fg="green")
+
+
+# ---------------------------------------------------------------------------
+# generate-prompts
+# ---------------------------------------------------------------------------
+
+@cli.command("generate-prompts")
+@click.option("--language", "-l", default=None, help="Target language (all if not set)")
+@click.option("--category", "-c", default=None, help="Harm category ID (e.g. H01)")
+@click.option("--severity", "-s", default=None, help="Severity code (S1-S4)")
+@click.option("--n-prompts", "-n", default=5, show_default=True, help="Prompts per combination")
+@click.option("--model", default=None, help="Override default prompt model")
+@click.option("--pku-dataset", default=None, help="Restrict PKU source prompts to this dataset")
+@click.option("--run-id", default=None, help="Reuse an existing pipeline run ID")
+@click.option("--workers", default=1, show_default=True, type=int, help="Parallel worker count")
+@click.option("--dry-run", is_flag=True, help="Print config without calling API")
+def generate_prompts(language, category, severity, n_prompts, model, pku_dataset, run_id, workers, dry_run):
+    """Generate PKU-context-regenerated prompts only; responses are batched later."""
+    import yaml
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from pathlib import Path
+    from sqlalchemy import func
+    from tqdm import tqdm
+
+    from src.config.generation import load_generation_config
+    from src.config.languages import list_language_names
+    from src.storage.db import SessionLocal, GeneratedPromptORM, GenerationCostORM, SourcePromptORM, init_db
+    from src.generation.pku_adapted_generation_job import PKUAdaptedGenerationJob
+
+    if workers < 1:
+        raise click.ClickException("--workers must be at least 1")
+
+    generation_config = load_generation_config()
+    config_path = Path(__file__).parent.parent.parent / "configs" / "pipeline.yaml"
+    with open(config_path, encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+
+    model_id = model or generation_config.default_model
+    languages = [language] if language else list_language_names()
+    categories = [category] if category else config["active_harm_categories"]
+    severities = [severity] if severity else ["S1", "S2", "S3", "S4"]
+    run_id = run_id or str(uuid.uuid4())
+
+    total_combinations = len(languages) * len(categories) * len(severities)
+    click.echo(
+        f"[>>] Prompt-only plan: {len(languages)} languages × {len(categories)} categories "
+        f"× {len(severities)} severities = {total_combinations} combinations\n"
+        f"   {n_prompts} prompts per combination\n"
+        f"   Method: pku_context_regeneration\n"
+        f"   Model: {model_id}\n"
+        f"   Workers: {workers}\n"
+        f"   Run ID: {run_id}"
+    )
+
+    if dry_run:
+        click.secho("[?] Dry run — no API calls made.", fg="yellow")
+        return
+
+    init_db()
+    with SessionLocal() as session:
+        source_query = session.query(func.count(SourcePromptORM.id))
+        if pku_dataset:
+            source_query = source_query.filter(SourcePromptORM.source_dataset == pku_dataset)
+        source_count = int(source_query.scalar() or 0)
+        if source_count == 0:
+            raise click.ClickException(
+                "No PKU source prompts found. Run `afriguard ingest-pku-prompts` first."
+            )
+
+        work_items = []
+        total_existing = 0
+        for lang in languages:
+            for cat in categories:
+                for sev in severities:
+                    existing_rows = (
+                        session.query(GeneratedPromptORM.generation_params)
+                        .filter(
+                            GeneratedPromptORM.run_id == run_id,
+                            GeneratedPromptORM.language == lang,
+                            GeneratedPromptORM.harm_category == cat,
+                            GeneratedPromptORM.severity == sev,
+                        )
+                        .all()
+                    )
+                    existing = sum(
+                        1
+                        for (params,) in existing_rows
+                        if _generation_mode(params) in {"pku_context_regeneration", "pku_adapted"}
+                    )
+                    remaining = max(0, n_prompts - existing)
+                    total_existing += min(existing, n_prompts)
+                    if remaining:
+                        work_items.append((lang, cat, sev, remaining))
+
+    def _run_item(item):
+        lang, cat, sev, remaining = item
+        with SessionLocal() as worker_session:
+            job = PKUAdaptedGenerationJob(
+                language=lang,
+                harm_category=cat,
+                severity=sev,
+                model_id=model_id,
+                n_candidates=0,
+                run_id=run_id,
+                prompt_model_id=model_id,
+                source_dataset=pku_dataset,
+                generate_candidates=False,
+            )
+            prompt_ids = job.run(worker_session, n_prompts=remaining)
+            total_cost, api_calls = (
+                worker_session.query(
+                    func.coalesce(func.sum(GenerationCostORM.cost_usd), 0.0),
+                    func.count(GenerationCostORM.id),
+                )
+                .filter(GenerationCostORM.run_id == run_id)
+                .one()
+            )
+            return lang, cat, sev, len(prompt_ids), float(total_cost), int(api_calls)
+
+    total_remaining = sum(item[3] for item in work_items)
+    bar = tqdm(
+        total=total_existing + total_remaining,
+        initial=total_existing,
+        desc="Generating prompts",
+        unit="prompt",
+        dynamic_ncols=True,
+    )
+    try:
+        with _temporary_log_levels(_QUIET_GENERATION_LOGGERS):
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [executor.submit(_run_item, item) for item in work_items]
+                for future in as_completed(futures):
+                    try:
+                        lang, cat, sev, count, total_cost, api_calls = future.result()
+                        bar.update(count)
+                        bar.set_postfix(
+                            {
+                                "lang": lang,
+                                "cat": cat,
+                                "sev": sev,
+                                "cost": f"${total_cost:.2f}",
+                                "api": api_calls,
+                            },
+                            refresh=True,
+                        )
+                    except Exception as exc:
+                        tqdm.write(f"  [-] Prompt worker failed: {exc}")
+    finally:
+        bar.close()
+
+    click.secho(
+        f"\n[OK] Prompt generation complete. Run ID: {run_id}\n"
+        f"Next: afriguard batch-prepare-responses --run-id {run_id}",
+        fg="green",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Batch response generation
+# ---------------------------------------------------------------------------
+
+@cli.command("batch-prepare-responses")
+@click.option("--run-id", required=True, help="Prompt-generation run ID")
+@click.option("--model", default=None, help="Response model")
+@click.option("--language", "-l", default=None, help="Only prepare prompts for this language")
+@click.option("--limit", default=None, type=int, help="Limit number of prompts included")
+@click.option("--n-candidates", default=None, type=int, help="Candidates per prompt")
+@click.option("--output-dir", default=None, type=click.Path(file_okay=False, path_type=Path))
+def batch_prepare_responses(run_id, model, language, limit, n_candidates, output_dir):
+    """Prepare OpenAI Batch JSONL requests for response generation."""
+    from src.config.generation import load_generation_config
+    from src.pipeline.batch_responses import prepare_response_batch
+    from src.storage.db import SessionLocal, init_db
+
+    init_db()
+    model_id = model or load_generation_config().default_model
+    with SessionLocal() as session:
+        try:
+            job = prepare_response_batch(
+                session=session,
+                run_id=run_id,
+                model_id=model_id,
+                output_dir=output_dir,
+                language=language,
+                limit=limit,
+                n_candidates=n_candidates,
+            )
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
+    click.secho("[OK] Response batch prepared.", fg="green")
+    click.echo(f"  batch_job_id: {job.id}")
+    click.echo(f"  requests:     {job.request_count}")
+    click.echo(f"  input_file:   {job.input_file_path}")
+    click.echo(f"Next: afriguard batch-submit --batch-job-id {job.id}")
+
+
+@cli.command("batch-submit")
+@click.option("--batch-job-id", required=True, help="Local batch job ID")
+def batch_submit(batch_job_id):
+    """Upload a prepared JSONL file and submit an OpenAI Batch API job."""
+    from src.pipeline.batch_responses import submit_batch_job
+    from src.storage.db import SessionLocal
+
+    with SessionLocal() as session:
+        job = submit_batch_job(session, batch_job_id)
+    click.secho("[OK] Batch submitted.", fg="green")
+    click.echo(f"  batch_job_id:    {job.id}")
+    click.echo(f"  openai_batch_id: {job.openai_batch_id}")
+    click.echo(f"  status:          {job.status}")
+
+
+@cli.command("batch-status")
+@click.option("--batch-job-id", required=True, help="Local batch job ID")
+def batch_status(batch_job_id):
+    """Refresh and print an OpenAI Batch API job status."""
+    from sqlalchemy import func
+    from src.pipeline.batch_responses import refresh_batch_status
+    from src.storage.db import SessionLocal, BatchRequestORM
+
+    with SessionLocal() as session:
+        job = refresh_batch_status(session, batch_job_id)
+        request_counts = (
+            session.query(BatchRequestORM.status, func.count(BatchRequestORM.id))
+            .filter(BatchRequestORM.batch_job_id == job.id)
+            .group_by(BatchRequestORM.status)
+            .all()
+        )
+    click.secho(f"Batch job: {job.id}", fg="cyan")
+    click.echo(f"  openai_batch_id: {job.openai_batch_id}")
+    click.echo(f"  status:          {job.status}")
+    click.echo(f"  output_file_id:  {job.openai_output_file_id or '-'}")
+    click.echo(f"  error_file_id:   {job.openai_error_file_id or '-'}")
+    click.echo("  local requests:")
+    for status, count in request_counts:
+        click.echo(f"    {status}: {count}")
+
+
+@cli.command("batch-sync")
+@click.option("--batch-job-id", required=True, help="Local batch job ID")
+def batch_sync(batch_job_id):
+    """Download completed batch results and create candidate responses."""
+    from src.pipeline.batch_responses import sync_response_batch
+    from src.storage.db import SessionLocal
+
+    with SessionLocal() as session:
+        synced, failed = sync_response_batch(session, batch_job_id)
+    click.secho("[OK] Batch sync complete.", fg="green")
+    click.echo(f"  candidates created: {synced}")
+    click.echo(f"  failed lines:        {failed}")
 
 
 # ---------------------------------------------------------------------------

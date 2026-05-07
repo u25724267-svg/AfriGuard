@@ -39,6 +39,7 @@ class PKUAdaptedGenerationJob:
         run_id: str | None = None,
         prompt_model_id: str | None = None,
         source_dataset: str | None = None,
+        generate_candidates: bool = True,
     ):
         self.language = language
         self.harm_category = harm_category
@@ -48,6 +49,7 @@ class PKUAdaptedGenerationJob:
         self.n_candidates = n_candidates
         self.run_id = run_id or str(uuid.uuid4())
         self.source_dataset = source_dataset
+        self.generate_candidates = generate_candidates
 
         self._router = ModelRouter()
         self._builder = PromptBuilder()
@@ -228,7 +230,8 @@ class PKUAdaptedGenerationJob:
         generation_params = self._generation_config.prompt_generation.to_dict()
         generation_params.update(
             {
-                "generation_mode": "pku_adapted",
+                "generation_mode": "pku_context_regeneration",
+                "legacy_generation_mode": "pku_adapted",
                 "source_dataset": source_prompt.source_dataset,
                 "source_split": source_prompt.source_split,
                 "source_prompt_table_id": source_prompt.id,
@@ -241,7 +244,8 @@ class PKUAdaptedGenerationJob:
                 "source_mapped_severity": source_prompt.mapped_severity,
                 "source_license": source_prompt.license,
                 "adaptation_model": self.prompt_model_id,
-                "adaptation_method": "rewrite_with_african_context",
+                "adaptation_method": "pku_context_injection_regeneration",
+                "prompt_only": not self.generate_candidates,
             }
         )
 
@@ -273,8 +277,12 @@ class PKUAdaptedGenerationJob:
         session.add(prompt_orm)
         session.flush()
 
-        candidates_generated = self._generate_candidates(session, prompt_id, prompt_response.text)
-        prompt_orm.status = "generated"
+        if self.generate_candidates:
+            candidates_generated = self._generate_candidates(session, prompt_id, prompt_response.text)
+            prompt_orm.status = "generated"
+        else:
+            candidates_generated = 0
+            prompt_orm.status = "pending_response"
         session.commit()
 
         logger.info(

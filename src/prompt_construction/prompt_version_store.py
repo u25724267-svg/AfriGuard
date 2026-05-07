@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import structlog
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.storage.db import PromptTemplateORM
@@ -66,7 +67,18 @@ class PromptVersionStore:
             created_at=datetime.now(tz=timezone.utc),
         )
         session.add(orm)
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            existing = (
+                session.query(PromptTemplateORM)
+                .filter(PromptTemplateORM.content_hash == content_hash)
+                .first()
+            )
+            if existing:
+                return existing
+            raise
         logger.info(
             "prompt_version_store.saved",
             template_id=template_id,

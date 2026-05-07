@@ -264,6 +264,65 @@ class GenerationCostORM(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
 
+class BatchJobORM(Base):
+    """Tracks an OpenAI Batch API job created by AfriGuard."""
+    __tablename__ = "batch_jobs"
+
+    id = Column(String(36), primary_key=True)
+    openai_batch_id = Column(String(120), nullable=True, unique=True, index=True)
+    openai_input_file_id = Column(String(120), nullable=True)
+    openai_output_file_id = Column(String(120), nullable=True)
+    openai_error_file_id = Column(String(120), nullable=True)
+    endpoint = Column(String(120), nullable=False, default="/v1/chat/completions")
+    stage = Column(String(60), nullable=False, index=True)
+    status = Column(String(40), nullable=False, default="prepared", index=True)
+    model_used = Column(String(100), nullable=False)
+    run_id = Column(String(36), nullable=False, index=True)
+    input_file_path = Column(Text, nullable=True)
+    output_file_path = Column(Text, nullable=True)
+    error_file_path = Column(Text, nullable=True)
+    request_count = Column(Integer, nullable=False, default=0)
+    metadata_ = Column("metadata", JSON, default=dict)
+    error = Column(Text, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    submitted_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    requests = relationship("BatchRequestORM", back_populates="batch_job")
+
+
+class BatchRequestORM(Base):
+    """Tracks one JSONL request line within a Batch API job."""
+    __tablename__ = "batch_requests"
+    __table_args__ = (
+        UniqueConstraint("custom_id", name="uq_batch_request_custom_id"),
+    )
+
+    id = Column(String(36), primary_key=True)
+    batch_job_id = Column(String(36), ForeignKey("batch_jobs.id"), nullable=False, index=True)
+    custom_id = Column(String(220), nullable=False, index=True)
+    stage = Column(String(60), nullable=False, index=True)
+    status = Column(String(40), nullable=False, default="prepared", index=True)
+    language = Column(String(50), nullable=False, index=True)
+    language_code = Column(String(10), nullable=False)
+    harm_category = Column(String(10), nullable=False, index=True)
+    severity = Column(String(5), nullable=False, index=True)
+    prompt_id = Column(String(36), ForeignKey("prompts.id"), nullable=True, index=True)
+    source_prompt_id = Column(String(120), nullable=True, index=True)
+    response_type = Column(String(20), nullable=True)
+    candidate_index = Column(Integer, nullable=True)
+    model_used = Column(String(100), nullable=False)
+    request_body = Column(JSON, default=dict)
+    response_body = Column(JSON, default=dict)
+    error = Column(Text, nullable=True)
+    created_candidate_id = Column(String(36), nullable=True, index=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    batch_job = relationship("BatchJobORM", back_populates="requests")
+
+
 class PipelineRunORM(Base):
     """Tracks resumable end-to-end pipeline runs."""
     __tablename__ = "pipeline_runs"
