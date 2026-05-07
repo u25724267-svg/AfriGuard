@@ -107,6 +107,35 @@ class SeedDocumentORM(Base):
     provenance_hash = Column(String(64), nullable=False, unique=True, index=True)
 
 
+class SourcePromptORM(Base):
+    """Original prompts imported from external benchmark datasets for adaptation."""
+
+    __tablename__ = "source_prompts"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_dataset",
+            "source_split",
+            "source_prompt_id",
+            name="uq_source_prompt_external_id",
+        ),
+    )
+
+    id = Column(String(36), primary_key=True)
+    source_dataset = Column(String(120), nullable=False, index=True)
+    source_split = Column(String(50), default="train", index=True)
+    source_prompt_id = Column(String(120), nullable=False, index=True)
+    prompt_text = Column(Text, nullable=False)
+    raw_harm_category = Column(String(120), nullable=True)
+    mapped_harm_category = Column(String(10), nullable=True, index=True)
+    raw_severity = Column(String(50), nullable=True)
+    mapped_severity = Column(String(5), nullable=True, index=True)
+    metadata_ = Column("metadata", JSON, default=dict)
+    license = Column(String(100), default="unknown")
+    source_url = Column(Text, nullable=True)
+    provenance_hash = Column(String(64), nullable=False, unique=True, index=True)
+    fetched_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
 class GeneratedPromptORM(Base):
     __tablename__ = "prompts"
 

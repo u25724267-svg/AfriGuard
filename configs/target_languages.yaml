@@ -1,0 +1,324 @@
+version: "1.0.0"
+description: >
+  AfriGuard target language set for scaling seed collection, batch planning,
+  pilot generation, and reviewer coverage. This file is a planning manifest:
+  languages listed here are not automatically enabled for generation until
+  they are added to configs/languages.yaml with prompt/response instructions.
+
+selection_policy:
+  name: "afriguard_40_v1"
+  count: 40
+  scope: >
+    High-impact African languages selected for reach, regional coverage,
+    digital seed availability, safety relevance, and reviewer feasibility.
+  exclusions:
+    - "Colonial official languages such as English, French, and Portuguese are excluded from this target set."
+    - "Broad Arabic macrolanguage coverage is excluded from v1; African Arabic varieties should be handled as a separate North Africa track."
+  promotion_policy: >
+    Start with pilot generation for each language. Promote to full batch
+    generation only after seed-readiness, language identification, filtering,
+    and reviewer checks pass.
+
+tiers:
+  - id: "tier_1"
+    name: "High-resource / first wave"
+    strategy: >
+      Prioritize for seed ingestion and PKU-adapted pilot generation. These
+      languages have stronger speaker reach, digital footprint, known NLP
+      datasets, or already exist in AfriGuard.
+    languages:
+      - name: "swahili"
+        display_name: "Swahili / Kiswahili"
+        iso_639_3: "swa"
+        countries: ["Tanzania", "Kenya", "Uganda", "DRC", "Rwanda", "Burundi"]
+        region: "East and Central Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "hausa"
+        display_name: "Hausa"
+        iso_639_3: "hau"
+        countries: ["Nigeria", "Niger", "Ghana", "Cameroon"]
+        region: "West Africa / Sahel"
+        script: "Latin"
+        status: "generation_configured"
+      - name: "yoruba"
+        display_name: "Yoruba"
+        iso_639_3: "yor"
+        countries: ["Nigeria", "Benin", "Togo"]
+        region: "West Africa"
+        script: "Latin"
+        status: "generation_configured"
+      - name: "igbo"
+        display_name: "Igbo"
+        iso_639_3: "ibo"
+        countries: ["Nigeria"]
+        region: "West Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "amharic"
+        display_name: "Amharic"
+        iso_639_3: "amh"
+        countries: ["Ethiopia"]
+        region: "Horn of Africa"
+        script: "Ge'ez"
+        status: "seed_discovery"
+      - name: "oromo"
+        display_name: "Oromo / Afaan Oromoo"
+        iso_639_3: "orm"
+        countries: ["Ethiopia", "Kenya"]
+        region: "Horn of Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "somali"
+        display_name: "Somali"
+        iso_639_3: "som"
+        countries: ["Somalia", "Djibouti", "Ethiopia", "Kenya"]
+        region: "Horn of Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "shona"
+        display_name: "Shona"
+        iso_639_3: "sna"
+        countries: ["Zimbabwe", "Mozambique"]
+        region: "Southern Africa"
+        script: "Latin"
+        status: "generation_configured"
+      - name: "kinyarwanda"
+        display_name: "Kinyarwanda"
+        iso_639_3: "kin"
+        countries: ["Rwanda"]
+        region: "East Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "tigrinya"
+        display_name: "Tigrinya"
+        iso_639_3: "tir"
+        countries: ["Eritrea", "Ethiopia"]
+        region: "Horn of Africa"
+        script: "Ge'ez"
+        status: "seed_discovery"
+      - name: "zulu"
+        display_name: "Zulu / isiZulu"
+        iso_639_3: "zul"
+        countries: ["South Africa"]
+        region: "Southern Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "xhosa"
+        display_name: "Xhosa / isiXhosa"
+        iso_639_3: "xho"
+        countries: ["South Africa"]
+        region: "Southern Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "nigerian_pidgin"
+        display_name: "Nigerian Pidgin"
+        iso_639_3: "pcm"
+        countries: ["Nigeria"]
+        region: "West Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "akan_twi"
+        display_name: "Akan / Twi"
+        iso_639_3: "aka"
+        countries: ["Ghana", "Cote d'Ivoire"]
+        region: "West Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "lingala"
+        display_name: "Lingala"
+        iso_639_3: "lin"
+        countries: ["DRC", "Republic of the Congo", "Angola", "CAR"]
+        region: "Central Africa"
+        script: "Latin"
+        status: "seed_discovery"
+
+  - id: "tier_2"
+    name: "Emerging-resource / second wave"
+    strategy: >
+      Build seed packs and run pilots after Tier 1. These languages improve
+      regional balance and often have enough public text or institutional
+      context for controlled generation.
+    languages:
+      - name: "luganda"
+        display_name: "Luganda / Ganda"
+        iso_639_3: "lug"
+        countries: ["Uganda"]
+        region: "East Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "kirundi"
+        display_name: "Kirundi / Rundi"
+        iso_639_3: "run"
+        countries: ["Burundi"]
+        region: "East Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "bambara"
+        display_name: "Bambara / Bamanankan"
+        iso_639_3: "bam"
+        countries: ["Mali"]
+        region: "West Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "wolof"
+        display_name: "Wolof"
+        iso_639_3: "wol"
+        countries: ["Senegal", "Gambia", "Mauritania"]
+        region: "West Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "fulfulde"
+        display_name: "Fulfulde / Fula / Pulaar"
+        iso_639_3: "ful"
+        countries: ["Nigeria", "Senegal", "Guinea", "Mali", "Cameroon", "Niger"]
+        region: "West Africa / Sahel"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "moore"
+        display_name: "Moore / More"
+        iso_639_3: "mos"
+        countries: ["Burkina Faso"]
+        region: "West Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "ewe"
+        display_name: "Ewe"
+        iso_639_3: "ewe"
+        countries: ["Ghana", "Togo", "Benin"]
+        region: "West Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "kikuyu"
+        display_name: "Kikuyu / Gikuyu"
+        iso_639_3: "kik"
+        countries: ["Kenya"]
+        region: "East Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "dholuo"
+        display_name: "Dholuo / Luo"
+        iso_639_3: "luo"
+        countries: ["Kenya", "Tanzania"]
+        region: "East Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "chichewa"
+        display_name: "Chichewa / Nyanja"
+        iso_639_3: "nya"
+        countries: ["Malawi", "Zambia", "Mozambique"]
+        region: "Southern Africa"
+        script: "Latin"
+        status: "generation_configured"
+      - name: "bemba"
+        display_name: "Bemba"
+        iso_639_3: "bem"
+        countries: ["Zambia", "DRC"]
+        region: "Southern / Central Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "sesotho"
+        display_name: "Sesotho / Southern Sotho"
+        iso_639_3: "sot"
+        countries: ["Lesotho", "South Africa"]
+        region: "Southern Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "setswana"
+        display_name: "Setswana / Tswana"
+        iso_639_3: "tsn"
+        countries: ["Botswana", "South Africa"]
+        region: "Southern Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "sepedi"
+        display_name: "Sepedi / Northern Sotho"
+        iso_639_3: "nso"
+        countries: ["South Africa"]
+        region: "Southern Africa"
+        script: "Latin"
+        status: "generation_configured"
+      - name: "xitsonga"
+        display_name: "Xitsonga / Tsonga"
+        iso_639_3: "tso"
+        countries: ["South Africa", "Mozambique", "Zimbabwe", "Eswatini"]
+        region: "Southern Africa"
+        script: "Latin"
+        status: "seed_discovery"
+
+  - id: "tier_3"
+    name: "Long-tail / targeted acquisition"
+    strategy: >
+      Use targeted source discovery, government/legal texts, religious/public
+      documents, reviewer-curated lexicons, and small pilots before scaling.
+    languages:
+      - name: "tshivenda"
+        display_name: "Tshivenda / Venda"
+        iso_639_3: "ven"
+        countries: ["South Africa", "Zimbabwe"]
+        region: "Southern Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "malagasy"
+        display_name: "Malagasy"
+        iso_639_3: "mlg"
+        countries: ["Madagascar"]
+        region: "Indian Ocean / East Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "kikongo"
+        display_name: "Kikongo / Kongo"
+        iso_639_3: "kon"
+        countries: ["DRC", "Republic of the Congo", "Angola"]
+        region: "Central Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "tshiluba"
+        display_name: "Tshiluba / Luba-Kasai"
+        iso_639_3: "lua"
+        countries: ["DRC"]
+        region: "Central Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "dinka"
+        display_name: "Dinka"
+        iso_639_3: "din"
+        countries: ["South Sudan", "Sudan"]
+        region: "East Africa / Nile Basin"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "kanuri"
+        display_name: "Kanuri"
+        iso_639_3: "kau"
+        countries: ["Nigeria", "Niger", "Chad", "Cameroon"]
+        region: "Lake Chad / Sahel"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "tiv"
+        display_name: "Tiv"
+        iso_639_3: "tiv"
+        countries: ["Nigeria", "Cameroon"]
+        region: "West / Central Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "ibibio_efik"
+        display_name: "Ibibio / Efik"
+        iso_639_3: "ibb"
+        countries: ["Nigeria"]
+        region: "West Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "mandinka"
+        display_name: "Mandinka / Mandingo"
+        iso_639_3: "mnk"
+        countries: ["Gambia", "Senegal", "Guinea-Bissau", "Guinea"]
+        region: "West Africa"
+        script: "Latin"
+        status: "seed_discovery"
+      - name: "yao"
+        display_name: "Yao / Chiyao"
+        iso_639_3: "yao"
+        countries: ["Malawi", "Tanzania", "Mozambique"]
+        region: "Southern / East Africa"
+        script: "Latin"
+        status: "generation_configured"

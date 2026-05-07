@@ -206,7 +206,7 @@ def dashboard() -> str:
         <label>Limit <input id="prompt-filter-limit" type="number" min="1" max="100" value="10"></label>
         <button onclick="loadGeneratedContent()">Refresh</button>
       </div>
-      <table><thead><tr><th>Created</th><th>Language</th><th>Category</th><th>Severity</th><th>Model</th><th>Prompt</th></tr></thead><tbody id="recent-prompts"></tbody></table>
+      <table><thead><tr><th>Created</th><th>Language</th><th>Category</th><th>Severity</th><th>Mode</th><th>Source</th><th>Model</th><th>Prompt</th></tr></thead><tbody id="recent-prompts"></tbody></table>
     </section>
     <section class="wide">
       <h2>Recent Candidate Responses</h2>
@@ -352,6 +352,12 @@ function escapeHtml(value) {
 function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
+function sourceCell(item) {
+  if (!item.source_dataset) return '-';
+  const label = `${item.source_dataset}:${item.source_prompt_id || '-'}`;
+  if (!item.source_prompt_text) return escapeHtml(label);
+  return `<details><summary>${escapeHtml(label)}</summary><div class="text-cell">${escapeHtml(item.source_prompt_text)}</div></details>`;
+}
 async function loadGeneratedContent() {
   if (!window.currentRunId) return;
   const promptQuery = params('prompt');
@@ -368,10 +374,12 @@ async function loadGeneratedContent() {
       <td>${item.language}</td>
       <td>${item.harm_category_label}</td>
       <td>${item.severity_label}</td>
+      <td>${item.generation_mode || 'native'}</td>
+      <td>${sourceCell(item)}</td>
       <td>${item.model_used}</td>
       <td class="text-cell">${expandableText(item.prompt_text)}</td>
     </tr>
-  `).join('') || '<tr><td colspan="6">None yet</td></tr>';
+  `).join('') || '<tr><td colspan="8">None yet</td></tr>';
   document.getElementById('recent-candidates').innerHTML = (candidates.items || []).map(item => `
     <tr>
       <td>${item.created_at || '-'}</td>
@@ -583,6 +591,7 @@ def _require_run(db: Session, run_id: str) -> PipelineRunORM:
 
 
 def _prompt_record(row: GeneratedPromptORM) -> dict[str, Any]:
+    params = row.generation_params or {}
     return {
         "id": row.id,
         "language": row.language,
@@ -596,7 +605,15 @@ def _prompt_record(row: GeneratedPromptORM) -> dict[str, Any]:
         "prompt_text": row.prompt_text,
         "status": row.status,
         "model_used": row.model_used,
-        "generation_params": row.generation_params or {},
+        "generation_mode": params.get("generation_mode", "native"),
+        "source_dataset": params.get("source_dataset"),
+        "source_split": params.get("source_split"),
+        "source_prompt_id": params.get("source_prompt_id"),
+        "source_prompt_hash": params.get("source_prompt_hash"),
+        "source_prompt_text": params.get("source_prompt_text"),
+        "source_license": params.get("source_license"),
+        "adaptation_method": params.get("adaptation_method"),
+        "generation_params": params,
         "prompt_tokens": row.prompt_tokens,
         "completion_tokens": row.completion_tokens,
         "cost_usd": row.cost_usd,

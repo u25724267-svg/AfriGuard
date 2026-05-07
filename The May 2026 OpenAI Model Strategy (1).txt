@@ -1,0 +1,296 @@
+﻿For discussion.
+Deep Dive & Execution Spec: Rethinking Instruction Generation for African Languages[a]
+Context & Objective: We have a 5-day window to utilize $8,000 in expiring OpenAI API credits. Our goal is to generate a high-quality, culturally grounded, synthetic instruction-tuning dataset for 40[b] African languages.
+This document serves two purposes:
+1. For the Team: To critique our departure from standard "Translate-and-Train" methodologies and align on the evaluation pipeline
+2. For the LLM Agent: To serve as the execution specification for running the A/B tests via the OpenAI Batch API[c][d][e].
+Table of Contents
+📄 Deep Dive & Execution Spec: Rethinking Instruction Generation for African Languages        1
+Table of Contents        1
+Executive Summary: Project "Afri-Gen"        2
+Mission: Scaling Native Instruction Tuning for 40 African Languages        2
+1. The Core Objective        2
+2. Why Now? (The Strategic Imperative)        2
+3. Key Methodology (The "Jan Buys" Approach)        2
+4. Decision Points for Team Critique        2
+5. Risk Assessment & Mitigation        3
+6. Immediate Next Steps        3
+The technical deep dive        5
+Part 1: The Paradigm Shift – Why "Translate-and-Train" Fails        5
+1. The Morphological Trap (Agglutinative Languages)        5
+2. Domain Mismatch & Data Scarcity        5
+3. The Task Equity Gap & Cultural Grounding        5
+Part 2: Methodological Options to Test (The API Experiments)        7
+Option 1: Factual Triplet Generation (Data-to-Text)        7
+Option 2: Topic-Anchored Local Self-Instruct        7
+Option 3: Cross-Lingual Pivot Prompting        7
+Option 4: Morphologically-Aware Task Injection (Code-Switching)        7
+Part 3: The Evaluation Conundrum – Moving Beyond LLM-as-a-Judge        9
+The Flaws of LLM-as-a-Judge in this Context:        9
+Our Mitigation: The "Coarse Filter + Fine Human Evaluation" Pipeline        9
+Part 4: LLM Agent Execution Parameters        10
+📚 Bibliography: Foundational & Applied Multilingual NLP        11
+I. Foundational Linguistics & The "Data-to-Text" Challenge        11
+II. Advanced Instruction Generation & Synthetic Data        11
+III. Benchmark Saturation & Contamination        12
+IV. Cultural Grounding & Evaluation        12
+💡 Pro-Tip for the Team:        12
+________________
+
+
+Executive Summary: Project "Afri-Gen"
+Mission: Scaling Native Instruction Tuning for 40 African Languages
+1. The Core Objective
+We are launching a 5-day sprint to generate a high-quality, synthetic instruction-tuning dataset for 40 African languages. Our goal is to move from "translation-based" language support to "native-generative" support. We are bypassing English-centric translation in favor of structured factual seeding to ensure our LLM understands African morphology, cultural nuance, and reasoning.
+2. Why Now? (The Strategic Imperative)
+3. Budget Opportunity: We have $8,000 in expiring OpenAI credits that must be utilized by [Date].
+4. The "Translationese" Crisis: Research from the attached papers (Ahuja et al., 2025; Buys, 2024) proves that translating English benchmarks into African languages results in "robot-speak" that fails to capture the grammatical concords of Bantu languages or the cultural context of African realities.
+5. Benchmark Saturation: Our internal analysis indicates that existing models are gaming common benchmarks. We need a native dataset to build a "Golden Test Set" that is immune to current "English-first" evaluation shortcuts.
+3. Key Methodology (The "Jan Buys" Approach)
+Instead of asking an LLM to translate English instructions, we will:
+
+
+1. Seed: Use Wikidata to extract facts (triplets) about African history, geography, and society.
+2. Generate: Prompt LLMs to generate reasoning, logic puzzles, and QA tasks entirely in the target language based on those facts.
+3. Filter: Use an "LLM-as-a-Judge" pipeline as a coarse filter, followed by a human-in-the-loop audit to build a high-fidelity test set.
+
+
+4. Decision Points for Team Critique
+Before we trigger the API batch process, we need the team to weigh in on these four critical decision points:
+
+
+Decision Point
+	Question for the Team
+	A. Generation Methodology
+	Are we comfortable focusing 70% of our budget on Triplet-based generation (Option 1) and Topic-anchored news (Option 2)? Do we have enough local news/Wikidata coverage for our Tier 3 languages?
+	B. The "Judge" Dilemma
+	We acknowledge LLM judges are biased. Are we aligned on using them only for factual consistency and formatting checks, rather than subjective linguistic "quality" scores?
+	C. Language Prioritization
+	We have tiered our 40 languages. Should we shift more budget toward Tier 3 languages (long-tail) even if the generation quality is lower, or double down on Tier 1 for a "perfect" high-resource base?
+	D. Human-in-the-Loop
+	We need a volunteer schedule for the post-sprint "Golden Set" audit. Who are our linguistic leads for the Tier 1-2 language groups?
+	
+
+5. Risk Assessment & Mitigation
+* Risk: "Model Collapse" or "Translationese" bleeding into our synthetic data.
+   * Mitigation: We are using Persona Prompting to force natural, idiomatic output and Code-Switching as a feature, not a bug, for modern technological terms.
+* Risk: API Batch API failure or budget burn rate.
+   * Mitigation: The coding team will implement a "circuit breaker" in the Python script that pauses execution if token costs exceed our $1,500/batch threshold.
+6. Immediate Next Steps
+1. Review: Please comment on the Decision Points by [Time/Date].
+2. Assign: Volunteers for language-specific human auditing.
+3. Execute: The Engineering team will deploy the Batch API scripts immediately following team sign-off.
+
+
+________________
+
+
+
+
+[Team, please provide your feedback as comments in this doc. If there are no major blockers by [Time], we will proceed with the Batch API configuration.]
+________________
+
+
+The technical deep dive
+Part 1: The Paradigm Shift – Why "Translate-and-Train" Fails
+Recent literature confirms that directly translating English datasets (like Alpaca or ShareGPT) into African languages destroys grammatical integrity, erases cultural context, and leads to Benchmark Saturation (where models score highly on translated multiple-choice tests but fail at native generation).
+
+
+To build a truly capable multilingual LLM, we must abandon translation-based data generation due to three critical failures:
+1. The Morphological Trap (Agglutinative Languages)
+Standard LLMs fail on agglutinative languages (e.g., the Bantu family: isiZulu, isiXhosa, Swahili). In English, grammar relies on word order and prepositions. In Bantu languages, meaning is constructed by attaching multiple prefixes and suffixes to a root verb, governed by complex noun-class concord systems.
+
+
+* The Failure: Prompting an LLM to "Translate this English instruction" forces a 1:1 word mapping, resulting in incorrect noun-class prefixes and text that sounds robotic ("Translationese").
+* The Fix: We must bypass English syntax entirely. By feeding the model abstract data (like factual triplets) and forcing it to construct the text natively, we yield significantly better grammatical structures (See related research on Triples-to-Text generation for low-resource agglutinative languages).
+2. Domain Mismatch & Data Scarcity
+African language web data is not just scarce; it is heavily skewed toward specific domains (e.g., religious texts, government news).
+
+
+* The Failure: Translating Western instruction sets (e.g., asking about "New York subway maps" or "US tax codes") forces the LLM to invent unnatural vocabulary, because the terms do not exist in the target language's pretraining corpus.
+* The Fix: Instruction generation must be anchored in local entities (African geography, history, local news) so the model accesses its most robust, natural vocabulary representations.
+3. The Task Equity Gap & Cultural Grounding
+Current multilingual models suffer from a "Task Equity Gap." In low-resource languages, they default to basic translation or summarization and fail at reasoning. Furthermore, standard synthetic generation yields culturally vacant responses.
+
+
+* The Fix: Instructions must be generated using Persona Prompting and open-ended generative tasks (logic puzzles, data extraction) rather than multiple-choice, which models easily game.
+
+
+
+
+________________
+Part 2: Methodological Options to Test (The API Experiments)
+To maximize the $8,000 budget, we will run A/B tests across four different instruction-generation pipelines.
+
+
+[AGENT INSTRUCTION: The agent should write Python scripts to sample 1,000 records using each of the following 4 methods via the OpenAI Batch API utilizing gpt-4o-mini].
+Option 1: Factual Triplet Generation (Data-to-Text)
+* Best for: Morphologically complex languages (isiZulu, Swahili, Shona).
+* Methodology: Extract Wikidata knowledge triplets for African entities [Entity, Relation, Attribute]. Do not provide English sentences.
+* System Prompt: "You are an expert linguist in[Target Language]. Look at these raw facts: [Nelson Mandela, born_in, Mvezo], [Mvezo, located_in, Eastern Cape]. Write a highly complex, natively phrased educational question and a detailed answer in [Target Language] based on these facts. Ensure perfect noun-class concord agreement."
+Option 2: Topic-Anchored Local Self-Instruct
+* Best for: Languages with existing clean news corpora (Hausa, Amharic, Yoruba).
+* Methodology: Pass a raw, human-written native paragraph (from local news or Wikipedia) to the LLM.
+* System Prompt: "Read this [Target Language] news article. Generate 3 diverse instructions that a user might ask an AI assistant regarding this text: 1) A reasoning question, 2) A summarization request, and 3) A cultural opinion question. Output the instructions and answers entirely in [Target Language]."
+Option 3: Cross-Lingual Pivot Prompting
+* Best for: Afroasiatic languages or languages with strong regional pivots.
+* Methodology: Instead of using English as the base prompt language, use a high-resource pivot language that shares linguistic or cultural ties (e.g., using Arabic to prompt for Hausa or Somali, or Swahili for East African languages).
+* System Prompt (Translated to Pivot Language): "As an expert in regional history, generate a detailed step-by-step logic puzzle in [Target Language] regarding traditional agricultural practices."
+Option 4: Morphologically-Aware Task Injection (Code-Switching)
+* Best for: Teaching the model reasoning tasks (coding, math) in low-resource languages.
+* Methodology: Explicitly instruct the model on how to handle missing modern vocabulary by embracing natural code-switching.
+* System Prompt: "Generate a step-by-step math problem in [Target Language]. If a modern technological or mathematical term does not exist, use natural code-switching with English or describe the concept using standard local idioms. Do not invent unnatural words."
+
+
+________________
+Part 3: The Evaluation Conundrum – Moving Beyond LLM-as-a-Judge
+Using an LLM (like GPT-4o) to judge the quality of African language outputs introduces massive blindspots. We must acknowledge the cons of LLM-as-a-judge and implement a strict mitigation strategy.
+The Flaws of LLM-as-a-Judge in this Context:
+1. The "Translationese" Bias: LLMs evaluate text by mapping it to their internal, English-centric representations. An LLM judge will often rate a sentence that uses English word order higher than a sentence using authentic, complex African syntax.
+2. Cultural Alignment Blindspots: LLMs apply Western safety alignments. A judge might flag culturally standard African idioms, traditional practices, or folklore as "unsafe" simply because they do not exist in Western training data.
+3. Self-Enhancement Bias: If gpt-4o-mini generates the data and gpt-4o evaluates it, the judge will naturally favor OpenAI's stylistic quirks, compounding systemic errors rather than filtering them.[f]
+4. The Agglutinative Blindspot: LLMs are notoriously bad at catching character-level morphological errors (e.g., incorrect prefixes) in low-resource languages, often scoring grammatically broken text as "Perfect".
+Our Mitigation: The "Coarse Filter + Fine Human Evaluation" Pipeline
+Because of our 5-day timeline, we must use the API for initial filtering, but we will "nerf" the LLM's subjective biases.
+
+
+* Phase 1: The LLM Coarse Filter (Day 4)
+   * Reference-Backed Judging Only: We will not ask the LLM "Is this good Swahili?". We will ask: "Does the [Target Language] output contain factual contradictions compared to this provided JSON triplet? Answer Yes/No."
+   * Formatting Validation: The LLM will strictly be used to drop "garbage" (e.g., the model outputted English instead of Yoruba, or broke JSON formatting).
+* Phase 2: The Human Expert Audit (Post-Sprint)
+   * Once the synthetic dataset is frozen, we will collaborate with native speakers, linguists, and local NLP networks.
+* Phase 3: Building a "Golden Test Set"
+   * Human experts will manually verify and correct a subset of ~2,000 instruction pairs. This human-verified subset becomes our Golden Benchmark—a culturally grounded, morphologically perfect evaluation set, completely isolated from benchmark saturation.
+
+
+
+
+
+
+Part 4: LLM Agent Execution Parameters
+[AGENT INSTRUCTION: When prompted to begin, the coding agent must adhere to the following strict parameters to build the pipeline.]
+
+
+1. API Routing:
+   * Use gpt-4o-mini[g] for all Option 1-4 generation tasks.
+   * Use the OpenAI Batch API (/v1/batches) exclusively to ensure the 50% cost reduction.
+   * Do not use synchronous /v1/chat/completions for anything other than a 5-shot test run.
+2. Data Ingestion:
+   * Write a script to parse a triplets.jsonl file (for Option 1) and a local_news.jsonl file (for Option 2).
+3. Concurrency & Output:
+   * Structure all outputs into a HuggingFace-compatible ShareGPT JSON format {"conversations":[{"from": "human", "value": "..."}, {"from": "gpt", "value": "..."}]}.
+4. Budget Tracking:
+   * Implement a tiktoken counter in the Python script. Pause batch submission and await user confirmation if projected token costs exceed $1,500 per batch run.
+
+
+________________
+📚 Bibliography: Foundational & Applied Multilingual NLP
+I. Foundational Linguistics & The "Data-to-Text" Challenge
+These papers explain why translation is a "dead end" for agglutinative and morphologically complex African languages.
+
+
+* Buys, J. (2024). Triples-to-isiXhosa (T2X): Addressing the Challenges of Low-Resource Agglutinative Data-to-Text Generation.
+   * Focus: Directly addresses the failures of standard LLMs to manage Bantu noun-class concord systems. It proves that feeding structured triplets is superior to translating English sentences.
+* Adelani, D. I., et al. (2021). MasakhaNER: Named Entity Recognition for African Languages.
+   * Focus: A seminal work in African NLP. It establishes that "one size fits all" tokenization and entity recognition don't work for African scripts and morphologies, necessitating local, ground-up data curation.
+* Joshi, P., et al. (2020). The State and Fate of Linguistic Diversity and Inclusion in the NLP World.
+   * Focus: The "manifesto" for the field. It categorizes languages by resource level (Scraping-Bys vs. Winners) and maps exactly which languages are currently being left behind.
+II. Advanced Instruction Generation & Synthetic Data
+These papers provide the blueprint for the four methods described in our deep dive.
+
+
+* Liu, Y. L., et al. (2025). MaXIFE: Multilingual and Cross-lingual Instruction Following Evaluation.
+   * Focus: Explores how LLMs perform on instruction-following tasks across languages. Essential for understanding why "Task Equity" is the missing link in current evaluations.
+* Chitale, P., et al. (2026). Updesh: Synthesizing grounded instruction tuning data for 13 indic languages.
+   * Focus: Provides the specific architecture for synthesizing instruction data. While focused on Indic languages, the "grounded synthesis" methodology is directly transferable to our African language project.
+* Wang, W., et al. (2024). All languages matter: On the multilingual safety of LLMs.
+   * Focus: Discusses why "Safety/Toxicity" is non-existent in low-resource settings and provides a framework for generating culturally specific safety instructions.
+III. Benchmark Saturation & Contamination
+These papers are essential for understanding why we are avoiding multiple-choice benchmarks and focusing on generation.
+
+
+* Akhtar, M., Reuel, A., et al. (2026). When AI Benchmarks Plateau: A Systematic Study of Benchmark Saturation.
+   * Focus: (The attached document) Explains that benchmarks like MMLU are becoming "saturated" and lose discriminative power as models optimize for them. It argues for dynamic, generative evaluation.
+* Ahuja, S., et al. (2025). The State and Fate of Multilingual, Contextual Evaluation in the NLP World.
+   * Focus: (The attached document) A critical audit of 51 benchmarks. It exposes how 56% of multilingual datasets are just English translations, proving that we must generate natively to be valid.
+* Rastogi, S., et al. (2025). Stamp your content: Proving dataset membership via watermarked rephrasings.
+   * Focus: Introduces a way to detect if a benchmark has leaked into training data. We should use this methodology to "watermark" our synthetic data so we know when our own models have memorized our test set.
+IV. Cultural Grounding & Evaluation
+How to ensure our data isn't just "fluent," but culturally relevant.
+
+
+* Chiu, Y. Y., et al. (2025). CulturalBench: A robust, diverse and challenging benchmark for measuring LMs’ cultural knowledge through human-AI red-teaming.
+   * Focus: Defines what "cultural grounding" actually means in an AI context. It moves away from factoid QA toward understanding pragmatic norms and world knowledge.
+* Isbarov, J., et al. (2025). TUMLU: A unified and native language understanding benchmark for Turkic languages.
+   * Focus: A perfect case study for our project. It prioritizes "sociolinguistic authenticity" over simple cross-lingual alignment. It validates our strategy of using local personas.
+
+
+________________
+
+
+💡 Pro-Tip for the Team:
+If you are asked to provide these to an LLM agent for research:
+
+
+1. For Methodological design: Focus on Buys (2024) and Chitale (2026).
+2. For Evaluation rubric design: Focus on Chiu (2025) and Ahuja et al. (2025).
+3. For Understanding why we don't just "translate": Focus on Adelani (2021) and Joshi (2020).
+
+
+Focus on TBX
+Part 1: The May 2026 OpenAI Model Strategy
+To stretch your $8,000 API credits for maximum yield across 40 languages, you must use routing (assigning different tasks to different models based on cost and capability) and the Batch API (which gives a 50% discount for asynchronous processing).
+1. The Workhorse: gpt-5.4-mini or gpt-4.1 (Allocate $6,000)
+* The Models: OpenAI recently released gpt-5.4-mini (designed for fast reasoning and tool use) and the updated gpt-4.1 (which boasts a massive 1M token context window and sits at a very affordable ~$2/1M input tokens[h]).
+* The Use Case: These are your core generation models. Feed them the African knowledge triplets and use them to generate the complex instruction-response pairs (Data-to-Text, Question Answering, Persona Prompts).
+* Why: They are more than twice as fast as the previous generation and deeply cost-effective, allowing you to generate tens of millions of tokens without burning your budget.
+2. The Data Extractor: gpt-5.4-nano or o4-mini (Allocate $500)
+* The Models: gpt-5.4-nano and o4-mini are OpenAI's newest, most affordable models designed for high-volume "grunt work" and repetitive extraction.
+* The Use Case: Use this for the Triplet Extraction phase. If you have raw Wikipedia articles or news text, use gpt-5.4-nano to rapidly parse the text and spit out clean JSON [Subject, Relation, Object] triplets.
+3. The Quality Judge: gpt-5.5 (Allocate $1,500)
+* The Model: Released on April 23, 2026, gpt-5.5 is the new flagship model. It is natively omnimodal and possesses the deepest reasoning and cross-cultural semantic understanding on the market [1]. However, it is expensive (e.g., $30/1M input,[i] $180/1M output).
+* The Use Case: Do not use this for generation. Use gpt-5.5 strictly as your "LLM-as-a-Judge" on Day 5. Pass a sampled subset of your generated instruction pairs through it to score them for grammatical accuracy, cultural grounding, and absence of English "translationese."
+
+
+________________
+
+
+Part 2: Top African Languages for Pretraining Data Collection
+For your team collecting pretraining data, it is crucial to understand that African languages have a massive disparity in digital footprint. If you want to train an LLM on the top 40, your team should prioritize the following "Tiers" to ensure you get high-quality tokens fast.
+Tier 1: The "High-Resource" African Languages (Prioritize Immediately)
+These languages have massive Common Crawl footprints, large Wikipedia databases, and extensive professional news corpora. Your team can easily pull gigabytes of text.
+
+
+1. Swahili (Kiswahili): The undisputed leader in East Africa. Target BBC Swahili, Voice of America (VOA), Deutsche Welle (DW), and regional Kenyan/Tanzanian news portals.
+2. Hausa: The dominant language of West Africa. It has one of the largest, cleanest news corpora available globally (BBC Hausa, VOA, RFI).
+3. Amharic: Highly digitized with a massive web presence in Ethiopia. Note: It uses the Ge'ez script, so ensure your tokenizer handles it efficiently.
+4. Afrikaans: Historically highly resourced with vast academic, governmental, and literary web presence.
+5. Yoruba & Igbo: Heavily championed by the Nigerian tech community (e.g., Masakhane). There are abundant annotated datasets and news sites (BBC Yoruba/Igbo).
+6. Zulu (isiZulu) & Xhosa (isiXhosa): Strongly backed by South African government initiatives (SADiLaR) and universities.
+7. Somali: Features a massive digital diaspora footprint and extensive news media.
+Tier 2: The "Emerging Resource" Languages
+These have enough data for a solid pretraining base but will require targeted scraping. 8.  Naija (Nigerian Pidgin): Has a massive, informal web presence (X/Twitter, local blogs) and official news (BBC News Pidgin). 9.  Kinyarwanda: Backed by the Rwandan government’s digitalization efforts (e.g., Digital Umuganda). 10. Oromo: A large speaker base in Ethiopia with a rapidly growing digital footprint. 11. Akan (Twi) & Luganda: Growing rapidly due to active NLP research grants in Ghana and Uganda. 12. Shona: Strong presence in Zimbabwe with a growing Wikipedia and academic corpora.
+Tier 3: The "Long-Tail" Languages (The remainder of your Top 40)
+Languages like Fon, Ewe, Tigrinya, Sesotho, Bambara, Wolof, etc.
+
+
+* The Strategy: Standard web scraping (Common Crawl) will yield very little high-quality data. Your team must target:
+   * Religious Texts: Translated Bibles and JW300 (Jehovah’s Witnesses database, a goldmine for parallel low-resource data).
+   * Government Documents: Translated proceedings and legal texts from local parliaments.
+   * Synthetic Data: This is where the instruction data you generate this week using gpt-5.4-mini will be absolutely vital to teach the model how to structure these languages.
+Immediate Next Steps for Your Team
+1. Download Existing Corpora: Tell the pretraining team to immediately download the CulturaX, NLLB (No Language Left Behind), and Aya datasets. These already contain cleaned pretraining text for your Tier 1 and Tier 2 languages.
+2. Set up Targeted Scrapers: Point your scrapers at BBC Africa, VOA, and DW across the 10+ African languages they support. This provides perfectly grammatical text.
+3. Deploy the API Script: Lock in your prompts, format your target knowledge triplets into JSONL files, and push them to the OpenAI Batch API using gpt-5.4-mini or gpt-4.1-nano tonight to start the 24-hour processing window.
+
+
+[a]@idris.abdulmumin@up.ac.za Please take a look and make your comments. I want to do some of this. But what things could I be missing.
+_Assigned to idris.abdulmumin@up.ac.za_
+[b]We could have a pilot run of say 100 records per language and use an LID to determine if the content generated is in the target language and then continue the generation. This can all be automated. We could even have a pool of more than 40 languages, and if one fails, it can be replaced within the pool, so that we get the target 40
+[c]I hope we don't run into rate limits, as that is the biggest bottleneck for this plan.
+[d]That should not be a problem with open ai batch api
+[e]The triplet generation can start now, even before the plan is finalized, so that execution will just begin when everything is ready
+[f]we can consider gpt-5.4 which costs exactly the same as gpt-4o for input tokens but has slightly more expensive output tokens, or gpt-5.1 which is cheaper than 4o
+[g]we can also consider gpt 5-mini at $0.125/mill input or gpt-5.4-mini at $0.375/mill input tokens with batch for superior perfermance
+[h]$1.25
+[i]$2.5/1M input batch, $15-$22.5/1M output batch

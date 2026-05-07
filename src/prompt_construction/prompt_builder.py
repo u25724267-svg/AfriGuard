@@ -103,6 +103,64 @@ class PromptBuilder:
             severity=severity,
         )
 
+    def build_pku_adaptation_system_prompt(
+        self,
+        language: str,
+        harm_category: str,
+        severity: str,
+        source_prompt: str,
+        seed_context: str = "",
+        entity_string: str | None = None,
+    ) -> str:
+        """Assemble the system prompt for adapting a PKU source prompt."""
+        cat = self._registry.get_category(harm_category)
+
+        try:
+            lang_instruction = get_language_config(language).prompt_instruction
+        except KeyError:
+            lang_instruction = f"Write the user prompt ENTIRELY in {language}. Do NOT use English."
+
+        legal_context = self._legal_grounder.get_legal_context(language, harm_category)
+        cultural_notes = self._registry.get_cultural_notes(harm_category, language)
+
+        if entity_string is None:
+            entity_string = self._entity_sampler.get_entity_string(language)
+
+        subcats = ", ".join(cat.subcategories[:5]) if cat.subcategories else "general"
+
+        return self._templates.pku_adaptation_system_template.format(
+            language_instruction=lang_instruction,
+            harm_category_id=harm_category,
+            harm_category_name=cat.name,
+            harm_category_description=cat.description.strip(),
+            subcategories=subcats,
+            severity_frame=self._templates.severity_frame(severity),
+            legal_context=legal_context or "No specific legal context available.",
+            cultural_notes=cultural_notes or "Follow general cultural norms for this language community.",
+            entity_string=entity_string,
+            seed_context=seed_context or "No seed context available for this language.",
+            source_prompt=source_prompt,
+            language=language,
+            severity=severity,
+        )
+
+    def build_pku_adaptation_user_message(
+        self,
+        language: str,
+        harm_category: str,
+        severity: str,
+        source_prompt: str,
+    ) -> str:
+        """Build the user message that asks the LLM to adapt a source prompt."""
+        cat = self._registry.get_category(harm_category)
+        return self._templates.pku_adaptation_user_message_template.format(
+            language=language,
+            harm_category_id=harm_category,
+            harm_category_name=cat.name,
+            severity=severity,
+            source_prompt=source_prompt,
+        )
+
     def build_response_system_prompt(
         self,
         language: str,

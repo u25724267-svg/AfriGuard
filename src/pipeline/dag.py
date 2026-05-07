@@ -62,6 +62,12 @@ _QUIET_GENERATION_LOGGERS = {
     "openai": logging.WARNING,
 }
 
+
+def _generation_mode(params) -> str:
+    if isinstance(params, dict):
+        return params.get("generation_mode", "native")
+    return "native"
+
 # ---------------------------------------------------------------------------
 # CLI group
 # ---------------------------------------------------------------------------
@@ -145,6 +151,53 @@ def ingest_seeds(language, max_samples, source_ids):
 
 
 # ---------------------------------------------------------------------------
+# ingest-pku-prompts
+# ---------------------------------------------------------------------------
+
+@cli.command("ingest-pku-prompts")
+@click.option("--dataset", default="PKU-Alignment/PKU-SafeRLHF", show_default=True)
+@click.option("--split", default="train", show_default=True)
+@click.option("--hf-config", default=None, help="Optional Hugging Face dataset config/name")
+@click.option("--prompt-column", default="prompt", show_default=True)
+@click.option("--max-samples", default=1000, show_default=True, help="Max PKU rows to import")
+def ingest_pku_prompts(dataset, split, hf_config, prompt_column, max_samples):
+    """Import PKU prompts as source material for pku-adapted generation."""
+    from src.storage.db import SessionLocal, init_db
+    from src.ingestion.pku_prompt_ingestor import (
+        DEFAULT_PKU_LICENSE,
+        DEFAULT_PKU_SOURCE_URL,
+        PKUPromptIngestor,
+    )
+
+    init_db()
+    click.echo(
+        f"[IN] Importing PKU source prompts from {dataset} split={split} "
+        f"(max_samples={max_samples})..."
+    )
+    with SessionLocal() as session:
+        result = PKUPromptIngestor().ingest(
+            session=session,
+            dataset_name=dataset,
+            split=split,
+            hf_config=hf_config,
+            prompt_column=prompt_column,
+            max_samples=max_samples,
+            license_name=DEFAULT_PKU_LICENSE,
+            source_url=(
+                DEFAULT_PKU_SOURCE_URL
+                if dataset == "PKU-Alignment/PKU-SafeRLHF"
+                else f"https://huggingface.co/datasets/{dataset}"
+            ),
+        )
+
+    click.secho(
+        f"[OK] PKU source prompts imported: {result.inserted} inserted, "
+        f"{result.skipped} skipped, {result.seen} seen.",
+        fg="green",
+    )
+
+
+# ---------------------------------------------------------------------------
 # generate
 # ---------------------------------------------------------------------------
 
@@ -154,10 +207,29 @@ def ingest_seeds(language, max_samples, source_ids):
 @click.option("--severity", "-s", default=None, help="Severity code (S1-S4)")
 @click.option("--n-prompts", "-n", default=5, show_default=True, help="Prompts per combination")
 @click.option("--model", default=None, help="Override default model (e.g. gpt-5.4)")
+@click.option(
+    "--generation-mode",
+    type=click.Choice(["native", "pku-adapted"]),
+    default="native",
+    show_default=True,
+    help="Prompt generation strategy",
+)
+@click.option("--pku-dataset", default=None, help="Restrict pku-adapted source prompts to this dataset")
 @click.option("--run-id", default=None, help="Reuse an existing pipeline run ID")
 @click.option("--progress/--no-progress", default=True, help="Show generation progress bar")
 @click.option("--dry-run", is_flag=True, help="Print config without calling API")
-def generate(language, category, severity, n_prompts, model, run_id, progress, dry_run):
+def generate(
+    language,
+    category,
+    severity,
+    n_prompts,
+    model,
+    generation_mode,
+    pku_dataset,
+    run_id,
+    progress,
+    dry_run,
+):
     """Generate prompts and candidate responses using LLM."""
     import yaml
     from pathlib import Path
@@ -183,7 +255,8 @@ def generate(language, category, severity, n_prompts, model, run_id, progress, d
         f"× {len(severities)} severities = {total_combinations} combinations\n"
         f"   {n_prompts} prompts × {n_candidates} candidates each = "
         f"{total_combinations * n_prompts * n_candidates} total candidates\n"
-        f"   Model: {model_id}"
+        f"   Model: {model_id}\n"
+        f"   Generation mode: {generation_mode}"
     )
 
     if dry_run:
@@ -195,22 +268,35 @@ def generate(language, category, severity, n_prompts, model, run_id, progress, d
         return
 
     from sqlalchemy import func
-    from src.storage.db import SessionLocal, GeneratedPromptORM, GenerationCostORM
+    from src.storage.db import SessionLocal, GeneratedPromptORM, GenerationCostORM, SourcePromptORM, init_db
     from src.generation.generation_job import GenerationJob
+    from src.generation.pku_adapted_generation_job import PKUAdaptedGenerationJob
     from tqdm import tqdm
 
+    init_db()
     run_id = run_id or str(uuid.uuid4())
     click.echo(f"   Run ID: {run_id}\n")
 
     with SessionLocal() as session:
+        if generation_mode == "pku-adapted":
+            source_query = session.query(func.count(SourcePromptORM.id))
+            if pku_dataset:
+                source_query = source_query.filter(SourcePromptORM.source_dataset == pku_dataset)
+            source_count = int(source_query.scalar() or 0)
+            if source_count == 0:
+                raise click.ClickException(
+                    "No PKU source prompts found. Run `afriguard ingest-pku-prompts` first."
+                )
+            click.echo(f"   PKU source prompts available: {source_count}\n")
+
         work_items = []
         total_existing = 0
         total_remaining = 0
         for lang in languages:
             for cat in categories:
                 for sev in severities:
-                    existing = (
-                        session.query(GeneratedPromptORM)
+                    existing_rows = (
+                        session.query(GeneratedPromptORM.generation_params)
                         .filter(
                             GeneratedPromptORM.run_id == run_id,
                             GeneratedPromptORM.language == lang,
@@ -218,7 +304,12 @@ def generate(language, category, severity, n_prompts, model, run_id, progress, d
                             GeneratedPromptORM.severity == sev,
                             GeneratedPromptORM.status == "generated",
                         )
-                        .count()
+                        .all()
+                    )
+                    existing = sum(
+                        1
+                        for (params,) in existing_rows
+                        if _generation_mode(params) == generation_mode
                     )
                     remaining = max(0, n_prompts - existing)
                     total_existing += min(existing, n_prompts)
@@ -279,14 +370,25 @@ def generate(language, category, severity, n_prompts, model, run_id, progress, d
                         refresh=True,
                     )
                     try:
-                        job = GenerationJob(
-                            language=lang,
-                            harm_category=cat,
-                            severity=sev,
-                            model_id=model_id,
-                            n_candidates=n_candidates,
-                            run_id=run_id,
-                        )
+                        if generation_mode == "pku-adapted":
+                            job = PKUAdaptedGenerationJob(
+                                language=lang,
+                                harm_category=cat,
+                                severity=sev,
+                                model_id=model_id,
+                                n_candidates=n_candidates,
+                                run_id=run_id,
+                                source_dataset=pku_dataset,
+                            )
+                        else:
+                            job = GenerationJob(
+                                language=lang,
+                                harm_category=cat,
+                                severity=sev,
+                                model_id=model_id,
+                                n_candidates=n_candidates,
+                                run_id=run_id,
+                            )
                         job.run(
                             session=session,
                             n_prompts=remaining,
@@ -639,12 +741,19 @@ def resume_status(run_id):
 @click.option("--version", "-v", default="0.1.0")
 @click.option("--n-prompts", "-n", default=5)
 @click.option("--model", default=None, help="Override default generation model")
+@click.option(
+    "--generation-mode",
+    type=click.Choice(["native", "pku-adapted"]),
+    default="native",
+    show_default=True,
+)
+@click.option("--pku-max-samples", default=1000, show_default=True)
 @click.option("--run-id", default=None, help="Resume or create a run with this ID")
 @click.option("--resume", is_flag=True, help="Resume the latest incomplete run, or --run-id if provided")
 @click.pass_context
-def run_all(ctx, language, version, n_prompts, model, run_id, resume):
+def run_all(ctx, language, version, n_prompts, model, generation_mode, pku_max_samples, run_id, resume):
     """Run the full pipeline end-to-end (excluding human review)."""
-    click.echo("[>>] Running full AfriGuard pipeline...\n")
+    click.echo(f"[>>] Running full AfriGuard pipeline ({generation_mode})...\n")
 
     # `bootstrap-db` must always be safe to run first because it creates the
     # checkpoint tables used by autoresume.
@@ -698,6 +807,18 @@ def run_all(ctx, language, version, n_prompts, model, run_id, resume):
         "ingest_seeds",
         lambda: ctx.invoke(ingest_seeds, language=language, max_samples=500, source_ids=None),
     )
+    if generation_mode == "pku-adapted":
+        invoke_resumable(
+            "ingest_pku_prompts",
+            lambda: ctx.invoke(
+                ingest_pku_prompts,
+                dataset="PKU-Alignment/PKU-SafeRLHF",
+                split="train",
+                hf_config=None,
+                prompt_column="prompt",
+                max_samples=pku_max_samples,
+            ),
+        )
     invoke_resumable(
         "generate",
         lambda: ctx.invoke(
@@ -707,6 +828,8 @@ def run_all(ctx, language, version, n_prompts, model, run_id, resume):
             severity=None,
             n_prompts=n_prompts,
             model=model,
+            generation_mode=generation_mode,
+            pku_dataset=None,
             run_id=active_run_id,
             progress=True,
             dry_run=False,

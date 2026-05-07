@@ -62,7 +62,7 @@ class DatasetVersioner:
         Returns:
             Path to the release directory.
         """
-        from src.storage.db import CandidateResponseORM
+        from src.storage.db import CandidateResponseORM, GeneratedPromptORM
 
         release_dir = self._data_dir / "releases" / version
         release_dir.mkdir(parents=True, exist_ok=True)
@@ -74,6 +74,17 @@ class DatasetVersioner:
             query = query.filter(DatasetItemORM.language == language)
 
         items = self._dedupe_items(query.all())
+        prompt_ids = {item.prompt_id for item in items}
+        prompt_provenance = {
+            prompt_id: generation_params or {}
+            for prompt_id, generation_params in (
+                session.query(GeneratedPromptORM.id, GeneratedPromptORM.generation_params)
+                .filter(GeneratedPromptORM.id.in_(prompt_ids))
+                .all()
+                if prompt_ids
+                else []
+            )
+        }
         logger.info(
             "dataset_versioner.exporting",
             version=version,
@@ -123,7 +134,7 @@ class DatasetVersioner:
                 lang_dir = release_dir / lang
                 lang_dir.mkdir(exist_ok=True)
                 out_path = lang_dir / f"{itype}.jsonl"
-                self._write_jsonl(out_path, lang_items)
+                self._write_jsonl(out_path, lang_items, prompt_provenance)
                 item_counts[f"{lang}/{itype}"] = len(lang_items)
 
         # Write all-language combined files
@@ -135,12 +146,12 @@ class DatasetVersioner:
                 all_items = [i for i in items if i.item_type == itype]
                 if all_items:
                     out_path = all_dir / f"{itype}.jsonl"
-                    self._write_jsonl(out_path, all_items)
+                    self._write_jsonl(out_path, all_items, prompt_provenance)
 
         # Write PKU-style release files:
         #   prompts.jsonl, qa_pairs.jsonl, preference_pairs.jsonl
         if self._config.write_pku_style_jsonl:
-            self._write_pku_style_exports(release_dir, items)
+            self._write_pku_style_exports(release_dir, items, prompt_provenance)
 
         # Write dataset card
         if self._config.write_dataset_card:
@@ -158,10 +169,17 @@ class DatasetVersioner:
         )
         return release_dir
 
-    def _write_jsonl(self, path: Path, items: list[DatasetItemORM]) -> None:
+    def _write_jsonl(
+        self,
+        path: Path,
+        items: list[DatasetItemORM],
+        prompt_provenance: dict[str, dict] | None = None,
+    ) -> None:
         items = self._dedupe_items(items)
+        prompt_provenance = prompt_provenance or {}
         with open(path, "w", encoding="utf-8") as f:
             for item in items:
+                source = self._source_provenance(prompt_provenance.get(item.prompt_id))
                 record = {
                     "id": item.id,
                     "item_type": item.item_type,
@@ -182,6 +200,12 @@ class DatasetVersioner:
                         "prompt_template_id": item.prompt_template_id,
                         "seed_document_ids": item.seed_document_ids,
                         "models_used": item.models_used,
+                        "generation_mode": source["generation_mode"],
+                        "source_dataset": source["source_dataset"],
+                        "source_prompt_id": source["source_prompt_id"],
+                        "source_prompt_hash": source["source_prompt_hash"],
+                        "source_license": source["source_license"],
+                        "adaptation_method": source["adaptation_method"],
                         "annotator_ids": item.annotator_ids,
                         "dataset_version": item.dataset_version,
                         "run_id": item.run_id,
@@ -232,8 +256,14 @@ class DatasetVersioner:
             )
         return (item.item_type, item.dataset_version, item.id)
 
-    def _write_pku_style_exports(self, release_dir: Path, items: list[DatasetItemORM]) -> None:
+    def _write_pku_style_exports(
+        self,
+        release_dir: Path,
+        items: list[DatasetItemORM],
+        prompt_provenance: dict[str, dict] | None = None,
+    ) -> None:
         """Write three PKU-style dataset products alongside AfriGuard-native files."""
+        prompt_provenance = prompt_provenance or {}
         grouped: dict[str, list[DatasetItemORM]] = {}
         if self._config.write_all_languages:
             grouped["all_languages"] = items
@@ -246,25 +276,31 @@ class DatasetVersioner:
 
             self._write_dict_jsonl(
                 out_dir / "prompts.jsonl",
-                self._build_prompt_records(group_items),
+                self._build_prompt_records(group_items, prompt_provenance),
             )
             self._write_dict_jsonl(
                 out_dir / "qa_pairs.jsonl",
-                self._build_qa_records(group_items),
+                self._build_qa_records(group_items, prompt_provenance),
             )
             self._write_dict_jsonl(
                 out_dir / "preference_pairs.jsonl",
-                self._build_preference_records(group_items),
+                self._build_preference_records(group_items, prompt_provenance),
             )
 
-    def _build_prompt_records(self, items: list[DatasetItemORM]) -> list[dict]:
+    def _build_prompt_records(
+        self,
+        items: list[DatasetItemORM],
+        prompt_provenance: dict[str, dict] | None = None,
+    ) -> list[dict]:
         """Build unique prompt-level records similar to PKU's prompt product."""
+        prompt_provenance = prompt_provenance or {}
         seen: set[str] = set()
         records: list[dict] = []
         for item in items:
             if item.prompt_id in seen:
                 continue
             seen.add(item.prompt_id)
+            source = self._source_provenance(prompt_provenance.get(item.prompt_id))
             records.append(
                 {
                     "prompt_id": item.prompt_id,
@@ -277,14 +313,24 @@ class DatasetVersioner:
                     "severity_level": self._severity_to_level(item.severity),
                     "prompt_template_id": item.prompt_template_id,
                     "seed_document_ids": item.seed_document_ids or [],
+                    "generation_mode": source["generation_mode"],
+                    "source_dataset": source["source_dataset"],
+                    "source_prompt_id": source["source_prompt_id"],
+                    "source_prompt_hash": source["source_prompt_hash"],
+                    "source_license": source["source_license"],
                     "run_id": item.run_id,
                     "dataset_version": item.dataset_version,
                 }
             )
         return records
 
-    def _build_qa_records(self, items: list[DatasetItemORM]) -> list[dict]:
+    def _build_qa_records(
+        self,
+        items: list[DatasetItemORM],
+        prompt_provenance: dict[str, dict] | None = None,
+    ) -> list[dict]:
         """Build PKU-QA-style records with safety metadata."""
+        prompt_provenance = prompt_provenance or {}
         seen: set[tuple] = set()
         records: list[dict] = []
         for item in items:
@@ -295,6 +341,7 @@ class DatasetVersioner:
                 continue
             seen.add(key)
             is_safe = item.item_type == "qa_safe"
+            source = self._source_provenance(prompt_provenance.get(item.prompt_id))
             records.append(
                 {
                     "prompt": item.prompt_text,
@@ -310,6 +357,11 @@ class DatasetVersioner:
                     "prompt_id": item.prompt_id,
                     "response_id": item.response_id,
                     "models_used": item.models_used or [],
+                    "generation_mode": source["generation_mode"],
+                    "source_dataset": source["source_dataset"],
+                    "source_prompt_id": source["source_prompt_id"],
+                    "source_prompt_hash": source["source_prompt_hash"],
+                    "source_license": source["source_license"],
                     "annotator_ids": item.annotator_ids or [],
                     "dataset_version": item.dataset_version,
                     "run_id": item.run_id,
@@ -317,8 +369,13 @@ class DatasetVersioner:
             )
         return records
 
-    def _build_preference_records(self, items: list[DatasetItemORM]) -> list[dict]:
+    def _build_preference_records(
+        self,
+        items: list[DatasetItemORM],
+        prompt_provenance: dict[str, dict] | None = None,
+    ) -> list[dict]:
         """Build PKU-preference-style records with paired responses."""
+        prompt_provenance = prompt_provenance or {}
         seen: set[tuple] = set()
         records: list[dict] = []
         for item in items:
@@ -328,6 +385,7 @@ class DatasetVersioner:
             if key in seen:
                 continue
             seen.add(key)
+            source = self._source_provenance(prompt_provenance.get(item.prompt_id))
             records.append(
                 {
                     "prompt": item.prompt_text,
@@ -346,6 +404,11 @@ class DatasetVersioner:
                     "rejected_response_id": item.rejected_response_id,
                     "prompt_id": item.prompt_id,
                     "models_used": item.models_used or [],
+                    "generation_mode": source["generation_mode"],
+                    "source_dataset": source["source_dataset"],
+                    "source_prompt_id": source["source_prompt_id"],
+                    "source_prompt_hash": source["source_prompt_hash"],
+                    "source_license": source["source_license"],
                     "annotator_ids": item.annotator_ids or [],
                     "dataset_version": item.dataset_version,
                     "run_id": item.run_id,
@@ -357,6 +420,18 @@ class DatasetVersioner:
         with open(path, "w", encoding="utf-8") as f:
             for record in records:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    @staticmethod
+    def _source_provenance(params: dict | None) -> dict[str, str | None]:
+        params = params or {}
+        return {
+            "generation_mode": params.get("generation_mode", "native"),
+            "source_dataset": params.get("source_dataset"),
+            "source_prompt_id": params.get("source_prompt_id"),
+            "source_prompt_hash": params.get("source_prompt_hash"),
+            "source_license": params.get("source_license"),
+            "adaptation_method": params.get("adaptation_method"),
+        }
 
     @staticmethod
     def _severity_to_level(severity: str | None) -> int:

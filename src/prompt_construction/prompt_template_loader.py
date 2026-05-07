@@ -21,6 +21,8 @@ class PromptTemplateConfig:
     severity_frames: dict[str, str]
     prompt_system_template: str
     prompt_user_message_template: str
+    pku_adaptation_system_template: str
+    pku_adaptation_user_message_template: str
     response_system_template: str
     response_role_instructions: dict[str, str]
 
@@ -49,6 +51,7 @@ def load_prompt_templates(
         data = yaml.safe_load(f) or {}
 
     prompt_generation = _required(data, "prompt_generation")
+    pku_adaptation = data.get("pku_adaptation", {})
     response_generation = _required(data, "response_generation")
 
     return PromptTemplateConfig(
@@ -56,6 +59,12 @@ def load_prompt_templates(
         severity_frames=dict(_required(data, "severity_frames")),
         prompt_system_template=str(_required(prompt_generation, "system_template")),
         prompt_user_message_template=str(_required(prompt_generation, "user_message_template")),
+        pku_adaptation_system_template=str(
+            pku_adaptation.get("system_template", prompt_generation["system_template"])
+        ),
+        pku_adaptation_user_message_template=str(
+            pku_adaptation.get("user_message_template", prompt_generation["user_message_template"])
+        ),
         response_system_template=str(_required(response_generation, "system_template")),
         response_role_instructions=dict(_required(response_generation, "role_instructions")),
     )
