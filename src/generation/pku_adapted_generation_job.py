@@ -89,6 +89,7 @@ class PKUAdaptedGenerationJob:
                 if progress_callback:
                     progress_callback(prompt_id)
             except Exception as e:
+                session.rollback()
                 logger.error(
                     "pku_adapted_generation_job.prompt_failed",
                     language=self.language,

@@ -74,25 +74,24 @@ class SeedContextInjector:
 
         should_shuffle = self._config.shuffle if shuffle is None else shuffle
 
-        # Fetch more than needed so we can randomly sample.
-        candidates: list[SeedDocumentORM] = (
+        # Fetch language-matched seeds first, then filter JSON harm_domains in
+        # Python. SQLAlchemy's generic JSON .contains() compiles to SQLite-
+        # friendly LIKE expressions, which break on PostgreSQL JSON columns.
+        language_pool: list[SeedDocumentORM] = (
             session.query(SeedDocumentORM)
-            .filter(
-                SeedDocumentORM.language == language,
-                SeedDocumentORM.harm_domains.contains(harm_category),
-            )
-            .limit(self.n_seeds * self._config.exact_match_pool_multiplier)
+            .filter(SeedDocumentORM.language == language)
+            .limit(self.n_seeds * self._config.language_fallback_pool_multiplier)
             .all()
         )
+        candidates = [
+            seed
+            for seed in language_pool
+            if isinstance(seed.harm_domains, list) and harm_category in seed.harm_domains
+        ][: self.n_seeds * self._config.exact_match_pool_multiplier]
 
         if not candidates and self._config.fallback_to_language:
             # Fall back: any seed for this language, used as cultural context.
-            candidates = (
-                session.query(SeedDocumentORM)
-                .filter(SeedDocumentORM.language == language)
-                .limit(self.n_seeds * self._config.language_fallback_pool_multiplier)
-                .all()
-            )
+            candidates = language_pool
 
         if not candidates:
             logger.warning(
