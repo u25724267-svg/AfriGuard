@@ -63,6 +63,188 @@ afriguard export --version 0.1.0
 afriguard cost-report
 ```
 
+## New VM Setup
+
+Use this checklist when moving the job to a fresh Linux VM.
+
+```bash
+# 1. Clone and enter the repo
+git clone <repo>
+cd AfriGuard
+
+# 2. Create/activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Configure environment
+cp .env.example .env
+# Edit .env and set OPENAI_API_KEY.
+```
+
+### PostgreSQL Setup
+
+Postgres is recommended for parallel generation. SQLite is still useful for a
+small local proof of concept, but parallel workers and Batch API syncs should
+use Postgres.
+
+On Ubuntu:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y postgresql postgresql-contrib
+sudo systemctl enable --now postgresql
+
+sudo -u postgres psql -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'afriguard') THEN CREATE ROLE afriguard LOGIN PASSWORD 'afriguard_dev'; ELSE ALTER ROLE afriguard WITH LOGIN PASSWORD 'afriguard_dev'; END IF; END \$\$;"
+sudo -u postgres createdb -O afriguard afriguard
+```
+
+Set this in `.env`:
+
+```bash
+DATABASE_URL=postgresql+psycopg2://afriguard:afriguard_dev@127.0.0.1:5432/afriguard
+PIPELINE_DEFAULT_MODEL=gpt-5.4
+```
+
+Initialize the schema:
+
+```bash
+source venv/bin/activate
+afriguard bootstrap-db
+```
+
+If you are migrating an existing SQLite database, copy `afriguard.db` to the
+new VM first, then run:
+
+```bash
+source venv/bin/activate
+venv/bin/python scripts/migrate_sqlite_to_postgres.py \
+  --postgres-url postgresql+psycopg2://afriguard:afriguard_dev@127.0.0.1:5432/afriguard
+```
+
+The migration script does not modify the SQLite file. It refuses to copy into
+non-empty Postgres tables unless you pass `--replace`.
+
+## PKU Prompt-First Workflow
+
+The current high-throughput workflow is prompt-first:
+
+1. Ingest seeds.
+2. Ingest PKU source prompts.
+3. Generate target-language prompts with local context.
+4. Prepare response-generation JSONL for OpenAI Batch API.
+5. Submit the batch.
+6. Sync completed responses into `candidates`.
+7. Filter and review.
+
+### 1. Ingest Seeds
+
+```bash
+source venv/bin/activate
+afriguard ingest-seeds --max-samples 500
+```
+
+For a fast single-language test:
+
+```bash
+afriguard ingest-seeds --language shona --max-samples 100
+```
+
+### 2. Ingest PKU Prompts
+
+```bash
+afriguard ingest-pku-prompts --max-samples 1000
+```
+
+For a tiny test:
+
+```bash
+afriguard ingest-pku-prompts --max-samples 20
+```
+
+### 3. Generate Prompts Only
+
+This command uses PKU + context injection regeneration:
+
+```bash
+afriguard generate-prompts \
+  --language shona \
+  --category H03 \
+  --severity S2 \
+  --n-prompts 2 \
+  --workers 8 \
+  --model gpt-5.4
+```
+
+Copy the printed `Run ID`. The generated prompts are stored with
+`status=pending_response`; candidate responses are generated later through
+Batch API.
+
+For a broader currently configured-language run:
+
+```bash
+afriguard generate-prompts \
+  --n-prompts 5 \
+  --workers 8 \
+  --model gpt-5.4
+```
+
+### 4. Prepare Response Batch
+
+```bash
+afriguard batch-prepare-responses \
+  --run-id <RUN_ID> \
+  --n-candidates 4 \
+  --model gpt-5.4
+```
+
+This creates a local JSONL file and a local `batch_jobs` row. It does not submit
+anything yet.
+
+### 5. Submit and Monitor Batch
+
+```bash
+afriguard batch-submit --batch-job-id <BATCH_JOB_ID>
+afriguard batch-status --batch-job-id <BATCH_JOB_ID>
+```
+
+When the OpenAI batch reaches `completed`, sync outputs into the DB:
+
+```bash
+afriguard batch-sync --batch-job-id <BATCH_JOB_ID>
+```
+
+After sync, candidate responses are available in `candidates` with
+`status=raw`.
+
+### 6. Filter and Review
+
+```bash
+afriguard filter --run-id <RUN_ID>
+afriguard sample-for-review --run-id <RUN_ID>
+afriguard review-ui --host 0.0.0.0 --port 8000
+```
+
+### Progress Dashboard
+
+The monitor dashboard shows runs, prompts, candidates, batch-adjacent progress,
+and recent generated items.
+
+```bash
+afriguard monitor --host 0.0.0.0 --port 8010
+```
+
+Open:
+
+```text
+http://<VM_EXTERNAL_IP>:8010
+```
+
+On a cloud VM, restrict the firewall rule for ports `8000` and `8010` to trusted
+IP addresses.
+
 ### Environment Safety
 
 AfriGuard only loads `.env` from the project root: `AfriGuard/.env`.
@@ -165,10 +347,17 @@ releases/0.1.0/
 ```
 afriguard bootstrap-db        Initialize database
 afriguard ingest-seeds        Fetch seed datasets from HuggingFace + local
+afriguard ingest-pku-prompts  Import PKU source prompts
 afriguard generate            Generate prompts and candidate responses
+afriguard generate-prompts    Generate PKU-context prompts only, with --workers
+afriguard batch-prepare-responses Prepare response-generation Batch API JSONL
+afriguard batch-submit        Submit a prepared OpenAI Batch API job
+afriguard batch-status        Refresh and show Batch API job status
+afriguard batch-sync          Sync completed Batch API outputs into candidates
 afriguard filter              Run all filtering stages
 afriguard assign-review       Auto-escalate S4 items, print review summary
 afriguard sample-for-review   Select subset for researcher review
+afriguard monitor             Start progress dashboard
 afriguard review-ui           Start human review web app
 afriguard assemble            Build preference/QA/classification items
 afriguard export              Export to JSONL files with dataset card
