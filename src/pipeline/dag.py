@@ -411,6 +411,7 @@ def generate(
 
 @cli.command("generate-prompts")
 @click.option("--language", "-l", default=None, help="Target language (all if not set)")
+@click.option("--tier", default=None, help="Target language tier from configs/target_languages.yaml, e.g. tier_1")
 @click.option("--category", "-c", default=None, help="Harm category ID (e.g. H01)")
 @click.option("--severity", "-s", default=None, help="Severity code (S1-S4)")
 @click.option("--n-prompts", "-n", default=5, show_default=True, help="Prompts per combination")
@@ -419,7 +420,7 @@ def generate(
 @click.option("--run-id", default=None, help="Reuse an existing pipeline run ID")
 @click.option("--workers", default=1, show_default=True, type=int, help="Parallel worker count")
 @click.option("--dry-run", is_flag=True, help="Print config without calling API")
-def generate_prompts(language, category, severity, n_prompts, model, pku_dataset, run_id, workers, dry_run):
+def generate_prompts(language, tier, category, severity, n_prompts, model, pku_dataset, run_id, workers, dry_run):
     """Generate PKU-context-regenerated prompts only; responses are batched later."""
     import yaml
     from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -440,8 +441,31 @@ def generate_prompts(language, category, severity, n_prompts, model, pku_dataset
     with open(config_path, encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
+    if language and tier:
+        raise click.ClickException("Use either --language or --tier, not both.")
+
     model_id = model or generation_config.default_model
-    languages = [language] if language else list_language_names()
+    configured_languages = set(list_language_names())
+    if tier:
+        target_path = Path(__file__).parent.parent.parent / "configs" / "target_languages.yaml"
+        with open(target_path, encoding="utf-8") as f:
+            target_config = yaml.safe_load(f) or {}
+        tier_config = next(
+            (row for row in target_config.get("tiers", []) if row.get("id") == tier),
+            None,
+        )
+        if tier_config is None:
+            known = ", ".join(row.get("id", "") for row in target_config.get("tiers", []))
+            raise click.ClickException(f"Unknown tier: {tier}. Known tiers: {known}")
+        languages = [row["name"] for row in tier_config.get("languages", [])]
+        unsupported = [lang for lang in languages if lang not in configured_languages]
+        if unsupported:
+            raise click.ClickException(
+                "Tier contains languages not yet in configs/languages.yaml: "
+                + ", ".join(unsupported)
+            )
+    else:
+        languages = [language] if language else list_language_names()
     categories = [category] if category else config["active_harm_categories"]
     severities = [severity] if severity else ["S1", "S2", "S3", "S4"]
     run_id = run_id or str(uuid.uuid4())

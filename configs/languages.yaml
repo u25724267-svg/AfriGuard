@@ -148,3 +148,225 @@ languages:
     response_instruction: >
       Respond ENTIRELY in Shona (chiShona). Do NOT use English. Use authentic
       Shona vocabulary and phrasing as spoken in Zimbabwe.
+
+  - name: "swahili"
+    display_name: "Swahili / Kiswahili"
+    code: "sw"
+    iso_639_3: "swa"
+    region: "East and Central Africa"
+    countries: ["Tanzania", "Kenya", "Uganda", "DRC", "Rwanda", "Burundi"]
+    reviewer_id: "reviewer_swahili"
+    flag: "TZ"
+    low_resource_detection: false
+    char_ngram_similarity: false
+    aliases: ["swahili", "kiswahili", "sw", "swa"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Swahili (Kiswahili). Do NOT use
+      English. Use natural East African Swahili phrasing and culturally
+      grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Swahili (Kiswahili). Do NOT use English. Use natural
+      East African Swahili phrasing and culturally grounded references.
+
+  - name: "igbo"
+    display_name: "Igbo"
+    code: "ig"
+    iso_639_3: "ibo"
+    region: "Nigeria / West Africa"
+    countries: ["Nigeria"]
+    reviewer_id: "reviewer_igbo"
+    flag: "NG"
+    low_resource_detection: true
+    char_ngram_similarity: false
+    aliases: ["igbo", "ig", "ibo"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Igbo. Do NOT use English. Use
+      authentic Igbo vocabulary and phrasing as used in southeastern Nigeria.
+    response_instruction: >
+      Respond ENTIRELY in Igbo. Do NOT use English. Use authentic Igbo
+      vocabulary and phrasing as used in southeastern Nigeria.
+
+  - name: "amharic"
+    display_name: "Amharic"
+    code: "am"
+    iso_639_3: "amh"
+    region: "Ethiopia / Horn of Africa"
+    countries: ["Ethiopia"]
+    reviewer_id: "reviewer_amharic"
+    flag: "ET"
+    low_resource_detection: true
+    char_ngram_similarity: false
+    aliases: ["amharic", "am", "amh"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Amharic. Do NOT use English. Use
+      natural Ethiopian Amharic phrasing and locally grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Amharic. Do NOT use English. Use natural Ethiopian
+      Amharic phrasing and locally grounded references.
+
+  - name: "oromo"
+    display_name: "Oromo / Afaan Oromoo"
+    code: "om"
+    iso_639_3: "orm"
+    region: "Ethiopia / Kenya / Horn of Africa"
+    countries: ["Ethiopia", "Kenya"]
+    reviewer_id: "reviewer_oromo"
+    flag: "ET"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["oromo", "afaan oromoo", "oromiffa", "om", "orm"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Oromo (Afaan Oromoo). Do NOT use
+      English. Use natural Oromo phrasing and locally grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Oromo (Afaan Oromoo). Do NOT use English. Use natural
+      Oromo phrasing and locally grounded references.
+
+  - name: "somali"
+    display_name: "Somali"
+    code: "so"
+    iso_639_3: "som"
+    region: "Somalia / Horn of Africa"
+    countries: ["Somalia", "Djibouti", "Ethiopia", "Kenya"]
+    reviewer_id: "reviewer_somali"
+    flag: "SO"
+    low_resource_detection: true
+    char_ngram_similarity: false
+    aliases: ["somali", "so", "som"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Somali. Do NOT use English. Use natural
+      Somali phrasing and locally grounded Horn of Africa references.
+    response_instruction: >
+      Respond ENTIRELY in Somali. Do NOT use English. Use natural Somali
+      phrasing and locally grounded Horn of Africa references.
+
+  - name: "kinyarwanda"
+    display_name: "Kinyarwanda"
+    code: "rw"
+    iso_639_3: "kin"
+    region: "Rwanda / East Africa"
+    countries: ["Rwanda"]
+    reviewer_id: "reviewer_kinyarwanda"
+    flag: "RW"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["kinyarwanda", "rwanda", "rw", "kin"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Kinyarwanda. Do NOT use English. Use
+      natural Rwandan Kinyarwanda phrasing and locally grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Kinyarwanda. Do NOT use English. Use natural Rwandan
+      Kinyarwanda phrasing and locally grounded references.
+
+  - name: "tigrinya"
+    display_name: "Tigrinya"
+    code: "ti"
+    iso_639_3: "tir"
+    region: "Eritrea / Ethiopia / Horn of Africa"
+    countries: ["Eritrea", "Ethiopia"]
+    reviewer_id: "reviewer_tigrinya"
+    flag: "ER"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["tigrinya", "tigrigna", "ti", "tir"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Tigrinya. Do NOT use English. Use
+      natural Tigrinya phrasing and locally grounded Eritrean or Ethiopian
+      references.
+    response_instruction: >
+      Respond ENTIRELY in Tigrinya. Do NOT use English. Use natural Tigrinya
+      phrasing and locally grounded Eritrean or Ethiopian references.
+
+  - name: "zulu"
+    display_name: "Zulu / isiZulu"
+    code: "zu"
+    iso_639_3: "zul"
+    region: "South Africa / Southern Africa"
+    countries: ["South Africa"]
+    reviewer_id: "reviewer_zulu"
+    flag: "ZA"
+    low_resource_detection: true
+    char_ngram_similarity: false
+    aliases: ["zulu", "isizulu", "zu", "zul"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Zulu (isiZulu). Do NOT use English. Use
+      natural isiZulu phrasing and South African local context.
+    response_instruction: >
+      Respond ENTIRELY in Zulu (isiZulu). Do NOT use English. Use natural
+      isiZulu phrasing and South African local context.
+
+  - name: "xhosa"
+    display_name: "Xhosa / isiXhosa"
+    code: "xh"
+    iso_639_3: "xho"
+    region: "South Africa / Southern Africa"
+    countries: ["South Africa"]
+    reviewer_id: "reviewer_xhosa"
+    flag: "ZA"
+    low_resource_detection: true
+    char_ngram_similarity: false
+    aliases: ["xhosa", "isixhosa", "xh", "xho"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Xhosa (isiXhosa). Do NOT use English.
+      Use natural isiXhosa phrasing and South African local context.
+    response_instruction: >
+      Respond ENTIRELY in Xhosa (isiXhosa). Do NOT use English. Use natural
+      isiXhosa phrasing and South African local context.
+
+  - name: "nigerian_pidgin"
+    display_name: "Nigerian Pidgin"
+    code: "pcm"
+    iso_639_3: "pcm"
+    region: "Nigeria / West Africa"
+    countries: ["Nigeria"]
+    reviewer_id: "reviewer_nigerian_pidgin"
+    flag: "NG"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["nigerian pidgin", "naija", "naijá", "pidgin", "pcm"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Nigerian Pidgin. Do NOT use standard
+      English except where Nigerian Pidgin naturally borrows words. Use natural
+      Nigerian urban phrasing and local references.
+    response_instruction: >
+      Respond ENTIRELY in Nigerian Pidgin. Do NOT use standard English except
+      where Nigerian Pidgin naturally borrows words. Use natural Nigerian urban
+      phrasing and local references.
+
+  - name: "akan_twi"
+    display_name: "Akan / Twi"
+    code: "tw"
+    iso_639_3: "aka"
+    region: "Ghana / West Africa"
+    countries: ["Ghana", "Cote d'Ivoire"]
+    reviewer_id: "reviewer_akan_twi"
+    flag: "GH"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["akan", "twi", "akan twi", "asante twi", "tw", "aka"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Akan/Twi. Do NOT use English. Use
+      natural Ghanaian Akan/Twi phrasing and locally grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Akan/Twi. Do NOT use English. Use natural Ghanaian
+      Akan/Twi phrasing and locally grounded references.
+
+  - name: "lingala"
+    display_name: "Lingala"
+    code: "ln"
+    iso_639_3: "lin"
+    region: "DRC / Republic of the Congo / Central Africa"
+    countries: ["DRC", "Republic of the Congo", "Angola", "CAR"]
+    reviewer_id: "reviewer_lingala"
+    flag: "CD"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["lingala", "ln", "lin"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Lingala. Do NOT use English or French
+      unless naturally code-switched in Lingala usage. Use locally grounded
+      Central African references.
+    response_instruction: >
+      Respond ENTIRELY in Lingala. Do NOT use English or French unless
+      naturally code-switched in Lingala usage. Use locally grounded Central
+      African references.

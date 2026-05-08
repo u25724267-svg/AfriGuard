@@ -10,7 +10,7 @@ models:
     presence_penalty: 0.0
     cost_per_1k_input_tokens: 0.0025
     cost_per_1k_output_tokens: 0.015
-    supports_languages: ["hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba", "shona"]
+    supports_languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "sepedi", "chichewa", "northern_sotho", "yao"]
     tier: "primary"
     notes: "OpenAI frontier model for agentic, coding, and professional workflows. API model has a 1,050,000-token context window and 128,000 max output tokens; this pipeline caps per-call output via max_tokens."
 
@@ -24,7 +24,7 @@ models:
     presence_penalty: 0.0
     cost_per_1k_input_tokens: 0.005
     cost_per_1k_output_tokens: 0.015
-    supports_languages: ["hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba", "shona"]
+    supports_languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "sepedi", "chichewa", "northern_sotho", "yao"]
     tier: "primary"
 
   gpt-4o-mini:
@@ -51,7 +51,7 @@ models:
     presence_penalty: 0.0
     cost_per_1k_input_tokens: 0.00125
     cost_per_1k_output_tokens: 0.010
-    supports_languages: ["hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba", "shona"]
+    supports_languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "sepedi", "chichewa", "northern_sotho", "yao"]
     tier: "primary"
 
 

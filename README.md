@@ -139,6 +139,96 @@ The current high-throughput workflow is prompt-first:
 6. Sync completed responses into `candidates`.
 7. Filter and review.
 
+### Complete Tier 1 Run
+
+Use this command sequence for the current full Tier 1 prompt-first pipeline.
+Keep the generated `RUN_ID` and printed `BATCH_JOB_ID`; those are the resume
+keys for the prompt and response stages.
+
+```bash
+source venv/bin/activate
+
+afriguard bootstrap-db
+
+afriguard ingest-seeds \
+  --source-ids masakhanews,masakhaner2,custom_afriguard_lexicon,tier1_east_africa_swahili_civic_context,tier1_nigeria_civic_context,tier1_ethiopia_horn_civic_context,tier1_somali_civic_context,tier1_rwanda_civic_context,tier1_south_africa_zulu_xhosa_civic_context,tier1_ghana_akan_civic_context,tier1_congo_lingala_civic_context \
+  --max-samples 500
+
+afriguard ingest-pku-prompts --max-samples 44600
+
+RUN_ID="tier1-full-$(date -u +%Y%m%d-%H%M%S)"
+echo "$RUN_ID" > tier1_run_id.txt
+
+afriguard generate-prompts \
+  --tier tier_1 \
+  --n-prompts 5 \
+  --workers 8 \
+  --model gpt-5.4 \
+  --run-id "$RUN_ID"
+
+afriguard batch-prepare-responses \
+  --run-id "$RUN_ID" \
+  --n-candidates 4 \
+  --model gpt-5.4
+
+# Copy the printed batch_job_id, then submit it:
+afriguard batch-submit --batch-job-id <BATCH_JOB_ID>
+
+# Poll until the OpenAI batch is completed:
+afriguard batch-status --batch-job-id <BATCH_JOB_ID>
+
+# Sync completed batch outputs into the candidates table:
+afriguard batch-sync --batch-job-id <BATCH_JOB_ID>
+
+afriguard filter --run-id "$RUN_ID"
+afriguard sample-for-review --run-id "$RUN_ID"
+afriguard monitor --host 0.0.0.0 --port 8010
+```
+
+The default Tier 1 command above creates 3,300 prompts:
+
+```text
+15 languages × 11 categories × 4 severities × 5 prompts
+```
+
+With `--n-candidates 4`, the response batch contains up to 13,200 response
+requests.
+
+### Resume Rules
+
+Seed ingestion and PKU ingestion are idempotent; rerunning them skips existing
+duplicates.
+
+To resume prompt generation, reuse the same `RUN_ID`:
+
+```bash
+RUN_ID="$(cat tier1_run_id.txt)"
+
+afriguard generate-prompts \
+  --tier tier_1 \
+  --n-prompts 5 \
+  --workers 8 \
+  --model gpt-5.4 \
+  --run-id "$RUN_ID"
+```
+
+To resume a prepared or submitted response batch, reuse the same
+`BATCH_JOB_ID`:
+
+```bash
+afriguard batch-status --batch-job-id <BATCH_JOB_ID>
+afriguard batch-sync --batch-job-id <BATCH_JOB_ID>
+```
+
+If no usable batch exists, prepare a new one from the same `RUN_ID`:
+
+```bash
+afriguard batch-prepare-responses \
+  --run-id "$RUN_ID" \
+  --n-candidates 4 \
+  --model gpt-5.4
+```
+
 ### 1. Ingest Seeds
 
 ```bash
@@ -150,6 +240,14 @@ For a fast single-language test:
 
 ```bash
 afriguard ingest-seeds --language shona --max-samples 100
+```
+
+For the first-wave Tier 1 seed expansion:
+
+```bash
+afriguard ingest-seeds \
+  --source-ids masakhanews,masakhaner2,custom_afriguard_lexicon,tier1_east_africa_swahili_civic_context,tier1_nigeria_civic_context,tier1_ethiopia_horn_civic_context,tier1_somali_civic_context,tier1_rwanda_civic_context,tier1_south_africa_zulu_xhosa_civic_context,tier1_ghana_akan_civic_context,tier1_congo_lingala_civic_context \
+  --max-samples 500
 ```
 
 ### 2. Ingest PKU Prompts
@@ -190,6 +288,21 @@ afriguard generate-prompts \
   --workers 8 \
   --model gpt-5.4
 ```
+
+For the full Tier 1 language set from `configs/target_languages.yaml`:
+
+```bash
+RUN_ID="tier1-full-$(date -u +%Y%m%d-%H%M%S)"
+
+afriguard generate-prompts \
+  --tier tier_1 \
+  --n-prompts 5 \
+  --workers 8 \
+  --model gpt-5.4 \
+  --run-id "$RUN_ID"
+```
+
+Use the same `RUN_ID` if you need to resume the prompt-generation stage.
 
 ### 4. Prepare Response Batch
 
@@ -349,7 +462,7 @@ afriguard bootstrap-db        Initialize database
 afriguard ingest-seeds        Fetch seed datasets from HuggingFace + local
 afriguard ingest-pku-prompts  Import PKU source prompts
 afriguard generate            Generate prompts and candidate responses
-afriguard generate-prompts    Generate PKU-context prompts only, with --workers
+afriguard generate-prompts    Generate PKU-context prompts only, with --workers/--tier
 afriguard batch-prepare-responses Prepare response-generation Batch API JSONL
 afriguard batch-submit        Submit a prepared OpenAI Batch API job
 afriguard batch-status        Refresh and show Batch API job status

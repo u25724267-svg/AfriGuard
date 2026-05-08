@@ -93,9 +93,12 @@ class SeedFetcher:
             logger.info("seed_fetcher.fetching_source", source_id=sid)
 
             try:
-                target_languages = [
-                    lang for lang in (languages or []) if lang in source_langs
-                ]
+                if languages:
+                    target_languages = [lang for lang in languages if lang in source_langs]
+                elif source.get("hf_config_by_language"):
+                    target_languages = list(source_langs)
+                else:
+                    target_languages = []
                 if target_languages:
                     for lang in target_languages:
                         source_for_language = dict(source)

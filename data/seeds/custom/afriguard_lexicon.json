@@ -123,5 +123,181 @@
       "Musasa Project", "Zimbabwe Republic Police Victim Friendly Unit",
       "Harare City Council", "University of Zimbabwe", "Friendship Bench"
     ]
+  },
+  "swahili": {
+    "person_names": [
+      "Asha", "Juma", "Fatuma", "Hassan", "Rehema", "Omari",
+      "Neema", "Baraka", "Mwanahamisi", "Abdalla", "Zawadi", "Saidi"
+    ],
+    "place_names": [
+      "Dar es Salaam", "Nairobi", "Mombasa", "Arusha", "Dodoma",
+      "Kisumu", "Zanzibar", "Mwanza", "Kampala", "Tanga"
+    ],
+    "organizations": [
+      "Tanzania Communications Regulatory Authority", "Kenya Data Commissioner",
+      "JamiiForums", "Kenya National Commission on Human Rights",
+      "Tanzania Police Force", "Safaricom"
+    ]
+  },
+  "igbo": {
+    "person_names": [
+      "Chinedu", "Ngozi", "Ifeoma", "Emeka", "Chiamaka", "Obinna",
+      "Nnenna", "Uche", "Adaeze", "Kelechi", "Chukwuemeka", "Amaka"
+    ],
+    "place_names": [
+      "Enugu", "Onitsha", "Owerri", "Aba", "Awka", "Nsukka",
+      "Abakaliki", "Nnewi", "Umuahia", "Port Harcourt"
+    ],
+    "organizations": [
+      "Ohanaeze Ndigbo", "University of Nigeria Nsukka",
+      "Enugu State Ministry of Health", "Aba Market Traders Association",
+      "Nigeria Police Force Enugu Command"
+    ]
+  },
+  "amharic": {
+    "person_names": [
+      "Abebe", "Mekdes", "Tadesse", "Hana", "Dawit", "Selam",
+      "Bereket", "Tigist", "Kebede", "Mulu", "Fitsum", "Rahel"
+    ],
+    "place_names": [
+      "Addis Ababa", "Bahir Dar", "Gondar", "Adama", "Hawassa",
+      "Mekelle", "Dire Dawa", "Jimma", "Debre Birhan", "Arba Minch"
+    ],
+    "organizations": [
+      "Ethiopian Human Rights Commission", "Addis Ababa University",
+      "Ethiopian Communications Authority", "Commercial Bank of Ethiopia",
+      "Federal Police Commission"
+    ]
+  },
+  "oromo": {
+    "person_names": [
+      "Caalaa", "Aster", "Gammachuu", "Falmataa", "Bontu", "Jaalannee",
+      "Lelisa", "Ifa", "Rooba", "Obsaa", "Birhanu", "Galgaloo"
+    ],
+    "place_names": [
+      "Finfinne", "Adama", "Jimma", "Nekemte", "Shashamane",
+      "Bishoftu", "Harar", "Bale", "Borana", "Ambo"
+    ],
+    "organizations": [
+      "Oromia Regional State", "Jimma University", "Oromia Police Commission",
+      "Oromia Broadcasting Network", "Oromia Credit and Saving Share Company"
+    ]
+  },
+  "somali": {
+    "person_names": [
+      "Ahmed", "Amina", "Mohamed", "Fadumo", "Hassan", "Hodan",
+      "Abdi", "Sahra", "Yusuf", "Nimco", "Farah", "Khadra"
+    ],
+    "place_names": [
+      "Mogadishu", "Hargeisa", "Kismayo", "Garowe", "Baidoa",
+      "Bosaso", "Burao", "Beledweyne", "Jigjiga", "Galkayo"
+    ],
+    "organizations": [
+      "Somali National Communications Authority", "Hormuud Telecom",
+      "Somali Police Force", "Benadir Regional Administration",
+      "Somaliland Human Rights Commission"
+    ]
+  },
+  "kinyarwanda": {
+    "person_names": [
+      "Jean Bosco", "Aline", "Emmanuel", "Claudine", "Eric", "Diane",
+      "Patrick", "Beata", "Olivier", "Josiane", "Innocent", "Esperance"
+    ],
+    "place_names": [
+      "Kigali", "Huye", "Musanze", "Rubavu", "Nyagatare",
+      "Rwamagana", "Rusizi", "Muhanga", "Nyanza", "Karongi"
+    ],
+    "organizations": [
+      "Rwanda Investigation Bureau", "Rwanda Utilities Regulatory Authority",
+      "National Cyber Security Authority", "Rwanda Governance Board",
+      "University of Rwanda"
+    ]
+  },
+  "tigrinya": {
+    "person_names": [
+      "Tesfay", "Selam", "Yonas", "Meron", "Dawit", "Saba",
+      "Mussie", "Ruth", "Haile", "Luwam", "Berhane", "Senait"
+    ],
+    "place_names": [
+      "Asmara", "Mekelle", "Adigrat", "Aksum", "Keren",
+      "Massawa", "Adi Quala", "Shire", "Wukro", "Dekemhare"
+    ],
+    "organizations": [
+      "Asmara University", "Tigray Health Bureau", "Eritrean Telecommunications Services",
+      "Mekelle University", "Regional Police Commission"
+    ]
+  },
+  "zulu": {
+    "person_names": [
+      "Sipho", "Nomsa", "Sibusiso", "Nokuthula", "Thabo", "Zanele",
+      "Mandla", "Lindiwe", "Bongani", "Nompumelelo", "Themba", "Ayanda"
+    ],
+    "place_names": [
+      "Durban", "Pietermaritzburg", "KwaMashu", "Umlazi", "Newcastle",
+      "Richards Bay", "Ulundi", "Empangeni", "Eshowe", "Ladysmith"
+    ],
+    "organizations": [
+      "eThekwini Municipality", "KwaZulu-Natal Department of Health",
+      "University of KwaZulu-Natal", "South African Police Service",
+      "SASSA KwaZulu-Natal"
+    ]
+  },
+  "xhosa": {
+    "person_names": [
+      "Lwandile", "Nomonde", "Siyabonga", "Thandiwe", "Bulelani", "Nosipho",
+      "Akhona", "Zukiswa", "Sihle", "Nandipha", "Lulama", "Mcebisi"
+    ],
+    "place_names": [
+      "Mthatha", "East London", "Gqeberha", "Khayelitsha", "Mdantsane",
+      "Qonce", "Butterworth", "Queenstown", "Grahamstown", "Alice"
+    ],
+    "organizations": [
+      "Eastern Cape Department of Health", "Nelson Mandela University",
+      "Walter Sisulu University", "Khayelitsha Community Health Centre",
+      "South African Police Service Eastern Cape"
+    ]
+  },
+  "nigerian_pidgin": {
+    "person_names": [
+      "Chinedu", "Aisha", "Tunde", "Blessing", "Emeka", "Sade",
+      "Ifeoma", "Musa", "Efe", "Ngozi", "Segun", "Maryam"
+    ],
+    "place_names": [
+      "Lagos", "Abuja", "Port Harcourt", "Benin City", "Warri",
+      "Kano", "Ibadan", "Ajegunle", "Surulere", "Wuse"
+    ],
+    "organizations": [
+      "EFCC", "Lagos State Traffic Management Authority", "Nigerian Police Force",
+      "NIMC", "Jumia Nigeria", "MTN Nigeria"
+    ]
+  },
+  "akan_twi": {
+    "person_names": [
+      "Kwame", "Ama", "Kofi", "Akosua", "Yaw", "Afia",
+      "Kwaku", "Abena", "Nana", "Kojo", "Adwoa", "Kwabena"
+    ],
+    "place_names": [
+      "Accra", "Kumasi", "Cape Coast", "Tema", "Takoradi",
+      "Sunyani", "Koforidua", "Obuasi", "Tamale", "Ho"
+    ],
+    "organizations": [
+      "Ghana Data Protection Commission", "Ghana Police Service",
+      "Komfo Anokye Teaching Hospital", "University of Ghana",
+      "National Communications Authority Ghana"
+    ]
+  },
+  "lingala": {
+    "person_names": [
+      "Jean-Pierre", "Mado", "Patrick", "Chantal", "Blaise", "Nadine",
+      "Arsene", "Mireille", "Dieudonne", "Esperance", "Fabrice", "Aline"
+    ],
+    "place_names": [
+      "Kinshasa", "Brazzaville", "Mbandaka", "Kisangani", "Matadi",
+      "Goma", "Lubumbashi", "Pointe-Noire", "Boma", "Bandundu"
+    ],
+    "organizations": [
+      "Radio Okapi", "Vodacom Congo", "Police Nationale Congolaise",
+      "University of Kinshasa", "Commission Electorale Nationale Independante"
+    ]
   }
 }

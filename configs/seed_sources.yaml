@@ -22,12 +22,25 @@ sources:
     type: "huggingface"
     hf_path: "masakhane/masakhaner2"
     hf_split: "train"
-    languages: ["hausa", "yoruba"]
+    hf_config_by_language:
+      swahili: "swa"
+      hausa: "hau"
+      yoruba: "yor"
+      igbo: "ibo"
+      shona: "sna"
+      kinyarwanda: "kin"
+      zulu: "zul"
+      xhosa: "xho"
+      nigerian_pidgin: "pcm"
+      akan_twi: "twi"
+    languages: ["swahili", "hausa", "yoruba", "igbo", "shona", "kinyarwanda", "zulu", "xhosa", "nigerian_pidgin", "akan_twi"]
     harm_domains: ["entities"]
     text_column: "tokens"
     is_token_list: true
-    license: "CC BY 4.0"
-    notes: "Provides authentic names, locations, organisations for prompt grounding"
+    license: "AFL-3.0 / CC BY-style dataset card; verify before redistribution"
+    notes: >
+      Provides native named-entity context for Tier 1 languages where available.
+      Treat as entity seed, not long-form style seed.
 
   - id: "masakhanews"
     name: "MasakhaNEWS"
@@ -35,11 +48,27 @@ sources:
     type: "huggingface"
     hf_path: "masakhane/masakhanews"
     hf_split: "train"
-    languages: ["hausa", "yoruba"]
-    harm_domains: ["H04", "H09", "context"]
+    hf_config_by_language:
+      swahili: "swa"
+      hausa: "hau"
+      yoruba: "yor"
+      igbo: "ibo"
+      amharic: "amh"
+      oromo: "orm"
+      somali: "som"
+      shona: "sna"
+      tigrinya: "tir"
+      xhosa: "xho"
+      nigerian_pidgin: "pcm"
+      lingala: "lin"
+    languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "tigrinya", "xhosa", "nigerian_pidgin", "lingala"]
+    harm_domains: ["H04", "H08", "H09", "context"]
     text_column: "text"
-    license: "CC BY 4.0"
-    notes: "News context seeds for disinformation and extremism categories"
+    license: "AFL-3.0 / CC BY-NC-style dataset card; verify before redistribution"
+    notes: >
+      News context seeds for disinformation, health misinformation, political
+      violence, public figures, institutions, and local current-affairs style.
+      Apply Masakhane-cluster overuse controls at selection time.
 
   - id: "naijasenti"
     name: "NaijaSenti"
@@ -314,6 +343,94 @@ sources:
     license: "Public legal text; verify official redistribution terms"
     notes: "Civil-enforcement grounding for foreign judgments, process service, witness pressure, asset hiding, damages, and safe legal-help prompts."
 
+  - id: "tier1_east_africa_swahili_civic_context"
+    name: "Tier 1 Swahili Civic and Legal Context"
+    description: "Curated Kenya/Tanzania civic context for Swahili prompt grounding"
+    type: "local"
+    local_path: "data/seeds/legal/tier1_east_africa_swahili_civic_context.txt"
+    languages: ["swahili"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Emergency first-wave civic grounding while fuller country legal packs are acquired."
+
+  - id: "tier1_nigeria_civic_context"
+    name: "Tier 1 Nigeria Civic and Legal Context"
+    description: "Curated Nigerian civic context for Hausa, Yoruba, Igbo, and Nigerian Pidgin prompt grounding"
+    type: "local"
+    local_path: "data/seeds/legal/tier1_nigeria_civic_context.txt"
+    languages: ["hausa", "yoruba", "igbo", "nigerian_pidgin"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Emergency first-wave civic grounding while fuller country legal packs are acquired."
+
+  - id: "tier1_ethiopia_horn_civic_context"
+    name: "Tier 1 Ethiopia and Horn Civic Context"
+    description: "Curated civic context for Amharic, Oromo, and Tigrinya prompt grounding"
+    type: "local"
+    local_path: "data/seeds/legal/tier1_ethiopia_horn_civic_context.txt"
+    languages: ["amharic", "oromo", "tigrinya"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Emergency first-wave civic grounding while fuller country legal packs are acquired."
+
+  - id: "tier1_somali_civic_context"
+    name: "Tier 1 Somali Civic Context"
+    description: "Curated Somali civic and safety context for prompt grounding"
+    type: "local"
+    local_path: "data/seeds/legal/tier1_somali_civic_context.txt"
+    languages: ["somali"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Emergency first-wave civic grounding while fuller country legal packs are acquired."
+
+  - id: "tier1_rwanda_civic_context"
+    name: "Tier 1 Rwanda Civic and Legal Context"
+    description: "Curated Rwandan civic context for Kinyarwanda prompt grounding"
+    type: "local"
+    local_path: "data/seeds/legal/tier1_rwanda_civic_context.txt"
+    languages: ["kinyarwanda"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Emergency first-wave civic grounding while fuller country legal packs are acquired."
+
+  - id: "tier1_south_africa_zulu_xhosa_civic_context"
+    name: "Tier 1 South Africa Civic and Legal Context for Zulu and Xhosa"
+    description: "Curated South African civic context for Zulu and Xhosa prompt grounding"
+    type: "local"
+    local_path: "data/seeds/legal/tier1_south_africa_zulu_xhosa_civic_context.txt"
+    languages: ["zulu", "xhosa"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Emergency first-wave civic grounding while fuller country legal packs are acquired."
+
+  - id: "tier1_ghana_akan_civic_context"
+    name: "Tier 1 Ghana Civic and Legal Context"
+    description: "Curated Ghanaian civic context for Akan/Twi prompt grounding"
+    type: "local"
+    local_path: "data/seeds/legal/tier1_ghana_akan_civic_context.txt"
+    languages: ["akan_twi"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Emergency first-wave civic grounding while fuller country legal packs are acquired."
+
+  - id: "tier1_congo_lingala_civic_context"
+    name: "Tier 1 Congo Civic Context"
+    description: "Curated DRC/Republic of Congo civic context for Lingala prompt grounding"
+    type: "local"
+    local_path: "data/seeds/legal/tier1_congo_lingala_civic_context.txt"
+    languages: ["lingala"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Emergency first-wave civic grounding while fuller country legal packs are acquired."
+
   - id: "shona_slang_conversational_ai"
     name: "Shona Slang Conversational AI"
     description: >
@@ -340,7 +457,7 @@ sources:
     description: "Hand-curated list of culturally authentic names, places, and expressions per language"
     type: "local"
     local_path: "data/seeds/custom/afriguard_lexicon.json"
-    languages: ["hausa", "sepedi", "chichewa", "northern_sotho", "yao", "yoruba", "shona"]
+    languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "sepedi", "chichewa", "northern_sotho", "yao"]
     harm_domains: ["entities"]
     text_column: "name"
     license: "AfriGuard (MIT)"
