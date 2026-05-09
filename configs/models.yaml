@@ -10,7 +10,7 @@ models:
     presence_penalty: 0.0
     cost_per_1k_input_tokens: 0.0025
     cost_per_1k_output_tokens: 0.015
-    supports_languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "sepedi", "chichewa", "northern_sotho", "yao"]
+    supports_languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "luganda", "kirundi", "bambara", "wolof", "fulfulde", "moore", "ewe", "kikuyu", "dholuo", "chichewa", "bemba", "sesotho", "setswana", "sepedi", "xitsonga", "tshivenda", "malagasy", "kikongo", "tshiluba", "dinka", "kanuri", "tiv", "ibibio_efik", "mandinka", "yao", "northern_sotho"]
     tier: "primary"
     notes: "OpenAI frontier model for agentic, coding, and professional workflows. API model has a 1,050,000-token context window and 128,000 max output tokens; this pipeline caps per-call output via max_tokens."
 
@@ -24,7 +24,7 @@ models:
     presence_penalty: 0.0
     cost_per_1k_input_tokens: 0.005
     cost_per_1k_output_tokens: 0.015
-    supports_languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "sepedi", "chichewa", "northern_sotho", "yao"]
+    supports_languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "luganda", "kirundi", "bambara", "wolof", "fulfulde", "moore", "ewe", "kikuyu", "dholuo", "chichewa", "bemba", "sesotho", "setswana", "sepedi", "xitsonga", "tshivenda", "malagasy", "kikongo", "tshiluba", "dinka", "kanuri", "tiv", "ibibio_efik", "mandinka", "yao", "northern_sotho"]
     tier: "primary"
 
   gpt-4o-mini:
@@ -51,7 +51,7 @@ models:
     presence_penalty: 0.0
     cost_per_1k_input_tokens: 0.00125
     cost_per_1k_output_tokens: 0.010
-    supports_languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "sepedi", "chichewa", "northern_sotho", "yao"]
+    supports_languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "luganda", "kirundi", "bambara", "wolof", "fulfulde", "moore", "ewe", "kikuyu", "dholuo", "chichewa", "bemba", "sesotho", "setswana", "sepedi", "xitsonga", "tshivenda", "malagasy", "kikongo", "tshiluba", "dinka", "kanuri", "tiv", "ibibio_efik", "mandinka", "yao", "northern_sotho"]
     tier: "primary"
 
 
@@ -81,5 +81,4 @@ defaults:
   prompt_model: "gpt-5.4"
   response_model: "gpt-5.4"
   judge_model: "gpt-5.4"
-  budget_alert_threshold_usd: 50.0
   budget_hard_limit_usd: 200.0

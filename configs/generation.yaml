@@ -1,7 +1,7 @@
 version: "1.0.0"
 
 default_model: "gpt-5.4"
-candidates_per_prompt: 4
+candidates_per_prompt: 6
 
 prompt_generation:
   temperature: 0.9

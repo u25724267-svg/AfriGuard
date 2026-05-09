@@ -50,6 +50,7 @@ class GenerationJob:
         n_candidates:          Number of candidate responses per prompt
         run_id:                Pipeline run ID for grouping
         prompt_model_id:       Model for prompt generation (defaults to model_id)
+        generate_candidates:   Whether to generate candidate responses inline
     """
 
     def __init__(
@@ -61,6 +62,7 @@ class GenerationJob:
         n_candidates: int = 4,
         run_id: str | None = None,
         prompt_model_id: str | None = None,
+        generate_candidates: bool = True,
     ):
         self.language = language
         self.harm_category = harm_category
@@ -69,6 +71,7 @@ class GenerationJob:
         self.prompt_model_id = prompt_model_id or model_id
         self.n_candidates = n_candidates
         self.run_id = run_id or str(uuid.uuid4())
+        self.generate_candidates = generate_candidates
 
         self._router = ModelRouter()
         self._builder = PromptBuilder()
@@ -213,7 +216,22 @@ class GenerationJob:
 
         # --- Step 4: Save generated prompt to DB ---
         generation_params = self._generation_config.prompt_generation.to_dict()
-        generation_params.setdefault("generation_mode", "native")
+        generation_params.update(
+            {
+                "generation_mode": "native",
+                "prompt_pipeline": (
+                    "native_inline_generation"
+                    if self.generate_candidates
+                    else "native_prompt_only"
+                ),
+                "response_strategy": (
+                    "inline_generation"
+                    if self.generate_candidates
+                    else "batch_response_generation"
+                ),
+                "prompt_only": not self.generate_candidates,
+            }
+        )
 
         prompt_orm = GeneratedPromptORM(
             id=prompt_id,
@@ -242,6 +260,16 @@ class GenerationJob:
         )
         session.add(prompt_orm)
         session.flush()
+
+        if not self.generate_candidates:
+            prompt_orm.status = "pending_response"
+            session.commit()
+            logger.info(
+                "generation_job.prompt_complete",
+                prompt_id=prompt_id,
+                candidates=0,
+            )
+            return prompt_id
 
         # --- Step 5: Generate N candidate responses ---
         n_safe, n_unsafe = self._generation_config.candidate_mix.response_type_counts(

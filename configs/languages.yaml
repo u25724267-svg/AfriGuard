@@ -370,3 +370,413 @@ languages:
       Respond ENTIRELY in Lingala. Do NOT use English or French unless
       naturally code-switched in Lingala usage. Use locally grounded Central
       African references.
+
+  - name: "luganda"
+    display_name: "Luganda / Ganda"
+    code: "lg"
+    iso_639_3: "lug"
+    region: "Uganda / East Africa"
+    countries: ["Uganda"]
+    reviewer_id: "reviewer_luganda"
+    flag: "UG"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["luganda", "ganda", "lg", "lug"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Luganda. Do NOT use English. Use
+      natural Ugandan Luganda phrasing and locally grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Luganda. Do NOT use English. Use natural Ugandan
+      Luganda phrasing and locally grounded references.
+
+  - name: "kirundi"
+    display_name: "Kirundi / Rundi"
+    code: "rn"
+    iso_639_3: "run"
+    region: "Burundi / East Africa"
+    countries: ["Burundi"]
+    reviewer_id: "reviewer_kirundi"
+    flag: "BI"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["kirundi", "rundi", "rn", "run"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Kirundi. Do NOT use English. Use
+      natural Burundian Kirundi phrasing and locally grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Kirundi. Do NOT use English. Use natural Burundian
+      Kirundi phrasing and locally grounded references.
+
+  - name: "bambara"
+    display_name: "Bambara / Bamanankan"
+    code: "bm"
+    iso_639_3: "bam"
+    region: "Mali / West Africa"
+    countries: ["Mali"]
+    reviewer_id: "reviewer_bambara"
+    flag: "ML"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["bambara", "bamanankan", "bamana", "bm", "bam"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Bambara (Bamanankan). Do NOT use
+      English or French unless naturally code-switched. Use locally grounded
+      Malian references.
+    response_instruction: >
+      Respond ENTIRELY in Bambara (Bamanankan). Do NOT use English or French
+      unless naturally code-switched. Use locally grounded Malian references.
+
+  - name: "wolof"
+    display_name: "Wolof"
+    code: "wo"
+    iso_639_3: "wol"
+    region: "Senegal / Gambia / West Africa"
+    countries: ["Senegal", "Gambia", "Mauritania"]
+    reviewer_id: "reviewer_wolof"
+    flag: "SN"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["wolof", "wo", "wol"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Wolof. Do NOT use English or French
+      unless naturally code-switched. Use locally grounded Senegalese or
+      Gambian references.
+    response_instruction: >
+      Respond ENTIRELY in Wolof. Do NOT use English or French unless naturally
+      code-switched. Use locally grounded Senegalese or Gambian references.
+
+  - name: "fulfulde"
+    display_name: "Fulfulde / Fula / Pulaar"
+    code: "ff"
+    iso_639_3: "ful"
+    region: "West Africa / Sahel"
+    countries: ["Nigeria", "Senegal", "Guinea", "Mali", "Cameroon", "Niger"]
+    reviewer_id: "reviewer_fulfulde"
+    flag: "NG"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["fulfulde", "fula", "fulani", "pulaar", "pular", "ff", "ful"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Fulfulde/Fula. Do NOT use English or
+      French unless naturally code-switched. Use locally grounded Sahelian or
+      West African references.
+    response_instruction: >
+      Respond ENTIRELY in Fulfulde/Fula. Do NOT use English or French unless
+      naturally code-switched. Use locally grounded Sahelian or West African
+      references.
+
+  - name: "moore"
+    display_name: "Moore / More"
+    code: "mos"
+    iso_639_3: "mos"
+    region: "Burkina Faso / West Africa"
+    countries: ["Burkina Faso"]
+    reviewer_id: "reviewer_moore"
+    flag: "BF"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["moore", "more", "mooré", "mos"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Moore. Do NOT use English or French
+      unless naturally code-switched. Use locally grounded Burkinabe references.
+    response_instruction: >
+      Respond ENTIRELY in Moore. Do NOT use English or French unless naturally
+      code-switched. Use locally grounded Burkinabe references.
+
+  - name: "ewe"
+    display_name: "Ewe"
+    code: "ee"
+    iso_639_3: "ewe"
+    region: "Ghana / Togo / Benin"
+    countries: ["Ghana", "Togo", "Benin"]
+    reviewer_id: "reviewer_ewe"
+    flag: "GH"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["ewe", "ee"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Ewe. Do NOT use English or French
+      unless naturally code-switched. Use locally grounded Ghanaian or Togolese
+      references.
+    response_instruction: >
+      Respond ENTIRELY in Ewe. Do NOT use English or French unless naturally
+      code-switched. Use locally grounded Ghanaian or Togolese references.
+
+  - name: "kikuyu"
+    display_name: "Kikuyu / Gikuyu"
+    code: "ki"
+    iso_639_3: "kik"
+    region: "Kenya / East Africa"
+    countries: ["Kenya"]
+    reviewer_id: "reviewer_kikuyu"
+    flag: "KE"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["kikuyu", "gikuyu", "ki", "kik"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Kikuyu (Gikuyu). Do NOT use English.
+      Use natural Kenyan Kikuyu phrasing and locally grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Kikuyu (Gikuyu). Do NOT use English. Use natural
+      Kenyan Kikuyu phrasing and locally grounded references.
+
+  - name: "dholuo"
+    display_name: "Dholuo / Luo"
+    code: "luo"
+    iso_639_3: "luo"
+    region: "Kenya / Tanzania / East Africa"
+    countries: ["Kenya", "Tanzania"]
+    reviewer_id: "reviewer_dholuo"
+    flag: "KE"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["dholuo", "luo", "jaluo"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Dholuo. Do NOT use English. Use natural
+      Kenyan Luo phrasing and locally grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Dholuo. Do NOT use English. Use natural Kenyan Luo
+      phrasing and locally grounded references.
+
+  - name: "bemba"
+    display_name: "Bemba"
+    code: "bem"
+    iso_639_3: "bem"
+    region: "Zambia / DRC / Southern and Central Africa"
+    countries: ["Zambia", "DRC"]
+    reviewer_id: "reviewer_bemba"
+    flag: "ZM"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["bemba", "chibemba", "ichibemba", "bem"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Bemba. Do NOT use English. Use natural
+      Zambian Bemba phrasing and locally grounded references.
+    response_instruction: >
+      Respond ENTIRELY in Bemba. Do NOT use English. Use natural Zambian Bemba
+      phrasing and locally grounded references.
+
+  - name: "sesotho"
+    display_name: "Sesotho / Southern Sotho"
+    code: "st"
+    iso_639_3: "sot"
+    region: "Lesotho / South Africa"
+    countries: ["Lesotho", "South Africa"]
+    reviewer_id: "reviewer_sesotho"
+    flag: "LS"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["sesotho", "southern sotho", "sotho", "st", "sot"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Sesotho. Do NOT use English. Use
+      natural Lesotho or South African Sesotho phrasing and local context.
+    response_instruction: >
+      Respond ENTIRELY in Sesotho. Do NOT use English. Use natural Lesotho or
+      South African Sesotho phrasing and local context.
+
+  - name: "setswana"
+    display_name: "Setswana / Tswana"
+    code: "tn"
+    iso_639_3: "tsn"
+    region: "Botswana / South Africa"
+    countries: ["Botswana", "South Africa"]
+    reviewer_id: "reviewer_setswana"
+    flag: "BW"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["setswana", "tswana", "tn", "tsn"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Setswana. Do NOT use English. Use
+      natural Botswana or South African Setswana phrasing and local context.
+    response_instruction: >
+      Respond ENTIRELY in Setswana. Do NOT use English. Use natural Botswana
+      or South African Setswana phrasing and local context.
+
+  - name: "xitsonga"
+    display_name: "Xitsonga / Tsonga"
+    code: "ts"
+    iso_639_3: "tso"
+    region: "South Africa / Mozambique / Zimbabwe / Eswatini"
+    countries: ["South Africa", "Mozambique", "Zimbabwe", "Eswatini"]
+    reviewer_id: "reviewer_xitsonga"
+    flag: "ZA"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["xitsonga", "tsonga", "ts", "tso"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Xitsonga. Do NOT use English. Use
+      natural Southern African Xitsonga phrasing and local context.
+    response_instruction: >
+      Respond ENTIRELY in Xitsonga. Do NOT use English. Use natural Southern
+      African Xitsonga phrasing and local context.
+
+  - name: "tshivenda"
+    display_name: "Tshivenda / Venda"
+    code: "ve"
+    iso_639_3: "ven"
+    region: "South Africa / Zimbabwe"
+    countries: ["South Africa", "Zimbabwe"]
+    reviewer_id: "reviewer_tshivenda"
+    flag: "ZA"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["tshivenda", "venda", "ve", "ven"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Tshivenda. Do NOT use English. Use
+      natural South African or Zimbabwean Tshivenda phrasing and local context.
+    response_instruction: >
+      Respond ENTIRELY in Tshivenda. Do NOT use English. Use natural South
+      African or Zimbabwean Tshivenda phrasing and local context.
+
+  - name: "malagasy"
+    display_name: "Malagasy"
+    code: "mg"
+    iso_639_3: "mlg"
+    region: "Madagascar / Indian Ocean"
+    countries: ["Madagascar"]
+    reviewer_id: "reviewer_malagasy"
+    flag: "MG"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["malagasy", "mg", "mlg"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Malagasy. Do NOT use English or French
+      unless naturally code-switched. Use locally grounded Madagascan
+      references.
+    response_instruction: >
+      Respond ENTIRELY in Malagasy. Do NOT use English or French unless
+      naturally code-switched. Use locally grounded Madagascan references.
+
+  - name: "kikongo"
+    display_name: "Kikongo / Kongo"
+    code: "kg"
+    iso_639_3: "kon"
+    region: "DRC / Republic of the Congo / Angola"
+    countries: ["DRC", "Republic of the Congo", "Angola"]
+    reviewer_id: "reviewer_kikongo"
+    flag: "CD"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["kikongo", "kongo", "kg", "kon"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Kikongo. Do NOT use English, French, or
+      Portuguese unless naturally code-switched. Use locally grounded Central
+      African references.
+    response_instruction: >
+      Respond ENTIRELY in Kikongo. Do NOT use English, French, or Portuguese
+      unless naturally code-switched. Use locally grounded Central African
+      references.
+
+  - name: "tshiluba"
+    display_name: "Tshiluba / Luba-Kasai"
+    code: "lua"
+    iso_639_3: "lua"
+    region: "DRC / Central Africa"
+    countries: ["DRC"]
+    reviewer_id: "reviewer_tshiluba"
+    flag: "CD"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["tshiluba", "luba-kasai", "luba kasai", "lua"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Tshiluba. Do NOT use English or French
+      unless naturally code-switched. Use locally grounded Congolese references.
+    response_instruction: >
+      Respond ENTIRELY in Tshiluba. Do NOT use English or French unless
+      naturally code-switched. Use locally grounded Congolese references.
+
+  - name: "dinka"
+    display_name: "Dinka"
+    code: "din"
+    iso_639_3: "din"
+    region: "South Sudan / Sudan / Nile Basin"
+    countries: ["South Sudan", "Sudan"]
+    reviewer_id: "reviewer_dinka"
+    flag: "SS"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["dinka", "jieng", "muonyjang", "din"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Dinka. Do NOT use English or Arabic
+      unless naturally code-switched. Use locally grounded South Sudanese
+      references.
+    response_instruction: >
+      Respond ENTIRELY in Dinka. Do NOT use English or Arabic unless naturally
+      code-switched. Use locally grounded South Sudanese references.
+
+  - name: "kanuri"
+    display_name: "Kanuri"
+    code: "kr"
+    iso_639_3: "kau"
+    region: "Lake Chad / Sahel"
+    countries: ["Nigeria", "Niger", "Chad", "Cameroon"]
+    reviewer_id: "reviewer_kanuri"
+    flag: "NG"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["kanuri", "yerwa kanuri", "kr", "kau"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Kanuri. Do NOT use English, French, or
+      Arabic unless naturally code-switched. Use locally grounded Lake Chad
+      references.
+    response_instruction: >
+      Respond ENTIRELY in Kanuri. Do NOT use English, French, or Arabic unless
+      naturally code-switched. Use locally grounded Lake Chad references.
+
+  - name: "tiv"
+    display_name: "Tiv"
+    code: "tiv"
+    iso_639_3: "tiv"
+    region: "Nigeria / Cameroon"
+    countries: ["Nigeria", "Cameroon"]
+    reviewer_id: "reviewer_tiv"
+    flag: "NG"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["tiv"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Tiv. Do NOT use English unless
+      naturally code-switched. Use locally grounded Nigerian Middle Belt
+      references.
+    response_instruction: >
+      Respond ENTIRELY in Tiv. Do NOT use English unless naturally
+      code-switched. Use locally grounded Nigerian Middle Belt references.
+
+  - name: "ibibio_efik"
+    display_name: "Ibibio / Efik"
+    code: "ibb"
+    iso_639_3: "ibb"
+    region: "Nigeria / West Africa"
+    countries: ["Nigeria"]
+    reviewer_id: "reviewer_ibibio_efik"
+    flag: "NG"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["ibibio", "efik", "ibibio efik", "ibb"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Ibibio/Efik. Do NOT use English unless
+      naturally code-switched. Use locally grounded southeastern Nigerian
+      references.
+    response_instruction: >
+      Respond ENTIRELY in Ibibio/Efik. Do NOT use English unless naturally
+      code-switched. Use locally grounded southeastern Nigerian references.
+
+  - name: "mandinka"
+    display_name: "Mandinka / Mandingo"
+    code: "mnk"
+    iso_639_3: "mnk"
+    region: "Gambia / Senegal / Guinea-Bissau / Guinea"
+    countries: ["Gambia", "Senegal", "Guinea-Bissau", "Guinea"]
+    reviewer_id: "reviewer_mandinka"
+    flag: "GM"
+    low_resource_detection: true
+    char_ngram_similarity: true
+    aliases: ["mandinka", "mandingo", "mandinka kango", "mnk"]
+    prompt_instruction: >
+      Write the user prompt ENTIRELY in Mandinka. Do NOT use English, French,
+      or Portuguese unless naturally code-switched. Use locally grounded
+      Senegambian references.
+    response_instruction: >
+      Respond ENTIRELY in Mandinka. Do NOT use English, French, or Portuguese
+      unless naturally code-switched. Use locally grounded Senegambian
+      references.

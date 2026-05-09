@@ -72,6 +72,8 @@ def dashboard() -> str:
     h1 { font-size: 28px; margin: 0 0 4px; letter-spacing: 0; }
     h2 { font-size: 16px; margin: 0 0 12px; }
     .topbar { display: flex; justify-content: space-between; align-items: end; gap: 18px; margin-bottom: 18px; }
+    .run-controls { display: flex; align-items: end; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .run-controls label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); min-width: 320px; }
     .muted { color: var(--muted); }
     .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
     .tab {
@@ -121,7 +123,11 @@ def dashboard() -> str:
       <h1>AfriGuard Pipeline Monitor</h1>
       <div class="muted" id="summary">Loading...</div>
     </div>
-    <div class="muted">Auto-refresh: 5s</div>
+    <div class="run-controls">
+      <label>Run View <select id="run-select"></select></label>
+      <button onclick="refresh()">Refresh</button>
+      <div class="muted">Auto-refresh: 5s</div>
+    </div>
   </div>
   <div class="grid">
     <div class="card"><div class="label">Run Status</div><div class="value" id="status">-</div></div>
@@ -206,7 +212,7 @@ def dashboard() -> str:
         <label>Limit <input id="prompt-filter-limit" type="number" min="1" max="100" value="10"></label>
         <button onclick="loadGeneratedContent()">Refresh</button>
       </div>
-      <table><thead><tr><th>Created</th><th>Language</th><th>Category</th><th>Severity</th><th>Mode</th><th>Source</th><th>Model</th><th>Prompt</th></tr></thead><tbody id="recent-prompts"></tbody></table>
+      <table><thead><tr><th>Created</th><th>Run</th><th>Language</th><th>Category</th><th>Severity</th><th>Mode</th><th>Pipeline</th><th>Source</th><th>Model</th><th>Prompt</th></tr></thead><tbody id="recent-prompts"></tbody></table>
     </section>
     <section class="wide">
       <h2>Recent Candidate Responses</h2>
@@ -219,7 +225,7 @@ def dashboard() -> str:
         <label>Limit <input id="candidate-filter-limit" type="number" min="1" max="100" value="10"></label>
         <button onclick="loadGeneratedContent()">Refresh</button>
       </div>
-      <table><thead><tr><th>Created</th><th>Language</th><th>Category</th><th>Severity</th><th>Type</th><th>Status</th><th>Model</th><th>Response</th></tr></thead><tbody id="recent-candidates"></tbody></table>
+      <table><thead><tr><th>Created</th><th>Run</th><th>Language</th><th>Category</th><th>Severity</th><th>Type</th><th>Status</th><th>Model</th><th>Response</th></tr></thead><tbody id="recent-candidates"></tbody></table>
     </section>
   </div>
   <p class="muted">JSON API: <code>/api/runs/latest</code>, <code>/api/runs/&lt;run_id&gt;/prompts</code>, or <code>/api/runs/&lt;run_id&gt;/candidates</code>. Refreshes every 5 seconds.</p>
@@ -237,10 +243,13 @@ document.querySelectorAll('.tab').forEach(button => {
 let metadataLoaded = false;
 
 async function refresh() {
-  const res = await fetch('/api/runs/latest');
-  const data = await res.json();
   if (!metadataLoaded) await loadMetadata();
-  document.getElementById('summary').textContent = `Run ${data.run_id} | updated ${data.updated_at || '-'}`;
+  else await loadRuns();
+  const selected = value('run-select') || 'latest';
+  const endpoint = selected === 'all' ? '/api/runs/all' : selected === 'latest' ? '/api/runs/latest' : `/api/runs/${encodeURIComponent(selected)}`;
+  const res = await fetch(endpoint);
+  const data = await res.json();
+  document.getElementById('summary').textContent = `${data.run_id === 'all' ? 'All runs' : `Run ${data.run_id}`} | updated ${data.updated_at || '-'}`;
   document.getElementById('status').textContent = data.status || '-';
   document.getElementById('stage').textContent = data.current_stage || 'none';
   document.getElementById('prompts').textContent = `${data.prompts.generated}/${data.prompts.target}`;
@@ -264,6 +273,7 @@ async function refresh() {
   document.getElementById('response-types').innerHTML = tableRows(data.candidates.by_response_type);
   document.getElementById('cost-models').innerHTML = tableRows(data.cost.by_model);
   window.currentRunId = data.run_id;
+  window.contentRunId = selected === 'latest' ? data.run_id : selected;
   loadGeneratedContent();
 }
 function tableRows(obj) {
@@ -295,6 +305,7 @@ function languageRows(rows) {
 async function loadMetadata() {
   const res = await fetch('/api/metadata');
   const meta = await res.json();
+  await loadRuns();
   fillSelect('prompt-filter-language', meta.languages, 'All languages');
   fillSelect('candidate-filter-language', meta.languages, 'All languages');
   fillSelect('prompt-filter-category', meta.categories, 'All categories');
@@ -304,6 +315,24 @@ async function loadMetadata() {
   fillSelect('candidate-filter-status', meta.candidate_statuses, 'All statuses');
   fillSelect('candidate-filter-type', meta.response_types, 'All types');
   metadataLoaded = true;
+}
+async function loadRuns() {
+  const res = await fetch('/api/runs');
+  const data = await res.json();
+  const select = document.getElementById('run-select');
+  const previous = select.value || 'latest';
+  const runOptions = (data.runs || []).map(run => {
+    const promptText = run.prompt_rows ? ` | ${run.prompt_rows} prompts` : '';
+    const candidateText = run.candidate_rows ? ` | ${run.candidate_rows} candidates` : '';
+    return `<option value="${escapeAttr(run.run_id)}">${escapeHtml(run.run_id)} (${escapeHtml(run.status || 'untracked')}${promptText}${candidateText})</option>`;
+  }).join('');
+  select.innerHTML = `
+    <option value="latest">Latest run</option>
+    <option value="all">All runs</option>
+    ${runOptions}
+  `;
+  select.value = [...select.options].some(option => option.value === previous) ? previous : 'latest';
+  select.onchange = () => refresh();
 }
 function fillSelect(id, options, allLabel) {
   const select = document.getElementById(id);
@@ -359,30 +388,33 @@ function sourceCell(item) {
   return `<details><summary>${escapeHtml(label)}</summary><div class="text-cell">${escapeHtml(item.source_prompt_text)}</div></details>`;
 }
 async function loadGeneratedContent() {
-  if (!window.currentRunId) return;
+  if (!window.contentRunId) return;
   const promptQuery = params('prompt');
   const candidateQuery = params('candidate');
   const [promptRes, candidateRes] = await Promise.all([
-    fetch(`/api/runs/${window.currentRunId}/prompts?${promptQuery}`),
-    fetch(`/api/runs/${window.currentRunId}/candidates?${candidateQuery}`),
+    fetch(`/api/runs/${encodeURIComponent(window.contentRunId)}/prompts?${promptQuery}`),
+    fetch(`/api/runs/${encodeURIComponent(window.contentRunId)}/candidates?${candidateQuery}`),
   ]);
   const prompts = await promptRes.json();
   const candidates = await candidateRes.json();
   document.getElementById('recent-prompts').innerHTML = (prompts.items || []).map(item => `
     <tr>
       <td>${item.created_at || '-'}</td>
+      <td><code>${escapeHtml(item.run_id)}</code></td>
       <td>${item.language}</td>
       <td>${item.harm_category_label}</td>
       <td>${item.severity_label}</td>
       <td>${item.generation_mode || 'native'}</td>
+      <td>${item.prompt_pipeline || '-'}</td>
       <td>${sourceCell(item)}</td>
       <td>${item.model_used}</td>
       <td class="text-cell">${expandableText(item.prompt_text)}</td>
     </tr>
-  `).join('') || '<tr><td colspan="8">None yet</td></tr>';
+  `).join('') || '<tr><td colspan="10">None yet</td></tr>';
   document.getElementById('recent-candidates').innerHTML = (candidates.items || []).map(item => `
     <tr>
       <td>${item.created_at || '-'}</td>
+      <td><code>${escapeHtml(item.run_id)}</code></td>
       <td>${item.language}</td>
       <td>${item.harm_category_label}</td>
       <td>${item.severity_label}</td>
@@ -391,7 +423,7 @@ async function loadGeneratedContent() {
       <td>${item.model_used}</td>
       <td class="text-cell">${expandableText(item.response_text)}</td>
     </tr>
-  `).join('') || '<tr><td colspan="8">None yet</td></tr>';
+  `).join('') || '<tr><td colspan="9">None yet</td></tr>';
 }
 refresh();
 setInterval(refresh, 5000);
@@ -411,6 +443,61 @@ def latest_run(db: Session = Depends(get_db)) -> dict[str, Any]:
     if run is None:
         raise HTTPException(status_code=404, detail="No pipeline runs found")
     return _run_status(db, run)
+
+
+@app.get("/api/runs")
+def list_runs(limit: int = Query(default=30, ge=1, le=200), db: Session = Depends(get_db)) -> dict[str, Any]:
+    prompt_counts = dict(
+        db.query(GeneratedPromptORM.run_id, func.count(GeneratedPromptORM.id))
+        .group_by(GeneratedPromptORM.run_id)
+        .all()
+    )
+    candidate_counts = dict(
+        db.query(CandidateResponseORM.run_id, func.count(CandidateResponseORM.id))
+        .group_by(CandidateResponseORM.run_id)
+        .all()
+    )
+    known_run_ids = set(prompt_counts) | set(candidate_counts)
+
+    runs = (
+        db.query(PipelineRunORM)
+        .order_by(PipelineRunORM.updated_at.desc())
+        .limit(limit)
+        .all()
+    )
+    items = []
+    seen = set()
+    for run in runs:
+        seen.add(run.id)
+        items.append(
+            {
+                "run_id": run.id,
+                "status": run.status,
+                "current_stage": run.current_stage,
+                "updated_at": _iso(run.updated_at),
+                "prompt_rows": int(prompt_counts.get(run.id, 0) or 0),
+                "candidate_rows": int(candidate_counts.get(run.id, 0) or 0),
+            }
+        )
+
+    for run_id in sorted(known_run_ids - seen):
+        items.append(
+            {
+                "run_id": run_id,
+                "status": "untracked",
+                "current_stage": None,
+                "updated_at": None,
+                "prompt_rows": int(prompt_counts.get(run_id, 0) or 0),
+                "candidate_rows": int(candidate_counts.get(run_id, 0) or 0),
+            }
+        )
+
+    return {"runs": items[:limit]}
+
+
+@app.get("/api/runs/all")
+def all_runs_status(db: Session = Depends(get_db)) -> dict[str, Any]:
+    return _all_runs_status(db)
 
 
 @app.get("/api/runs/{run_id}")
@@ -463,8 +550,11 @@ def run_prompts(
     limit: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    _require_run(db, run_id)
-    query = db.query(GeneratedPromptORM).filter(GeneratedPromptORM.run_id == run_id)
+    if run_id != "all":
+        _require_or_content(db, run_id)
+    query = db.query(GeneratedPromptORM)
+    if run_id != "all":
+        query = query.filter(GeneratedPromptORM.run_id == run_id)
     if language:
         query = query.filter(GeneratedPromptORM.language == language)
     if harm_category:
@@ -493,8 +583,11 @@ def run_candidates(
     limit: int = Query(default=20, ge=1, le=100),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    _require_run(db, run_id)
-    query = db.query(CandidateResponseORM).filter(CandidateResponseORM.run_id == run_id)
+    if run_id != "all":
+        _require_or_content(db, run_id)
+    query = db.query(CandidateResponseORM)
+    if run_id != "all":
+        query = query.filter(CandidateResponseORM.run_id == run_id)
     if language:
         query = query.filter(CandidateResponseORM.language == language)
     if harm_category:
@@ -515,12 +608,14 @@ def run_candidates(
 
 
 def _run_status(db: Session, run: PipelineRunORM) -> dict[str, Any]:
+    metadata = dict(run.metadata_ or {})
+    prompt_only = bool(metadata.get("prompt_only"))
     target_prompts = _target_prompt_count(run)
-    generated_prompts = _count_prompts(db, run.id)
+    prompt_rows = _count_prompt_rows(db, run.id)
+    generated_prompts = prompt_rows if prompt_only else _count_prompts(db, run.id)
     generated_candidates = _count_candidates(db, run.id)
     target_candidates = target_prompts * load_generation_config().candidates_per_prompt
     total_cost = _total_cost(db, run.id)
-    prompt_rows = _count_prompt_rows(db, run.id)
 
     return {
         "run_id": run.id,
@@ -583,11 +678,92 @@ def _run_status(db: Session, run: PipelineRunORM) -> dict[str, Any]:
     }
 
 
+def _all_runs_status(db: Session) -> dict[str, Any]:
+    latest_updated = db.query(func.max(PipelineRunORM.updated_at)).scalar()
+    prompt_rows = int(db.query(func.count(GeneratedPromptORM.id)).scalar() or 0)
+    generated_candidates = int(db.query(func.count(CandidateResponseORM.id)).scalar() or 0)
+    target_prompts = sum(_target_prompt_count(db_run) for db_run in db.query(PipelineRunORM).all())
+    target_prompts = max(target_prompts, prompt_rows)
+    target_candidates = max(generated_candidates, target_prompts * load_generation_config().candidates_per_prompt)
+
+    return {
+        "run_id": "all",
+        "status": "aggregate",
+        "current_stage": "all",
+        "language": "all",
+        "version": None,
+        "n_prompts": None,
+        "started_at": None,
+        "updated_at": _iso(latest_updated),
+        "age_seconds": None,
+        "prompts": {
+            "rows": prompt_rows,
+            "generated": prompt_rows,
+            "pending_or_failed": 0,
+            "target": target_prompts,
+            "percent": _percent(prompt_rows, target_prompts),
+            "by_status": _group_count(db, GeneratedPromptORM.status),
+            "by_language": _group_count(db, GeneratedPromptORM.language),
+            "by_harm_category": _group_count(db, GeneratedPromptORM.harm_category),
+            "by_harm_category_labeled": _labeled_category_counts(_group_count(db, GeneratedPromptORM.harm_category)),
+            "by_severity": _group_count(db, GeneratedPromptORM.severity),
+            "by_severity_labeled": _labeled_severity_counts(_group_count(db, GeneratedPromptORM.severity)),
+            "by_model": _group_count(db, GeneratedPromptORM.model_used),
+        },
+        "candidates": {
+            "generated": generated_candidates,
+            "target": target_candidates,
+            "percent": _percent(generated_candidates, target_candidates),
+            "by_status": _group_count(db, CandidateResponseORM.status),
+            "by_language": _group_count(db, CandidateResponseORM.language),
+            "by_harm_category": _group_count(db, CandidateResponseORM.harm_category),
+            "by_harm_category_labeled": _labeled_category_counts(_group_count(db, CandidateResponseORM.harm_category)),
+            "by_severity": _group_count(db, CandidateResponseORM.severity),
+            "by_severity_labeled": _labeled_severity_counts(_group_count(db, CandidateResponseORM.severity)),
+            "by_response_type": _group_count(db, CandidateResponseORM.response_type),
+            "by_model": _group_count(db, CandidateResponseORM.model_used),
+        },
+        "cost": {
+            "total_usd": _total_cost(db),
+            "by_model": _cost_by_model(db),
+            "calls_by_job_type": _group_count(db, GenerationCostORM.job_type),
+            "tokens": _token_totals(db),
+        },
+        "review": _review_stats(db),
+        "dataset_items": _dataset_item_stats(db),
+        "by_language_detail": _all_language_detail(db),
+        "prompt_matrix": [],
+        "candidate_matrix": [],
+        "stages": [],
+        "error": None,
+    }
+
+
 def _require_run(db: Session, run_id: str) -> PipelineRunORM:
     run = db.get(PipelineRunORM, run_id)
     if run is None:
         raise HTTPException(status_code=404, detail=f"No pipeline run found for {run_id}")
     return run
+
+
+def _require_or_content(db: Session, run_id: str) -> None:
+    if db.get(PipelineRunORM, run_id):
+        return
+    prompt_exists = (
+        db.query(GeneratedPromptORM.id)
+        .filter(GeneratedPromptORM.run_id == run_id)
+        .first()
+    )
+    if prompt_exists:
+        return
+    candidate_exists = (
+        db.query(CandidateResponseORM.id)
+        .filter(CandidateResponseORM.run_id == run_id)
+        .first()
+    )
+    if candidate_exists:
+        return
+    raise HTTPException(status_code=404, detail=f"No run content found for {run_id}")
 
 
 def _prompt_record(row: GeneratedPromptORM) -> dict[str, Any]:
@@ -606,6 +782,9 @@ def _prompt_record(row: GeneratedPromptORM) -> dict[str, Any]:
         "status": row.status,
         "model_used": row.model_used,
         "generation_mode": params.get("generation_mode", "native"),
+        "prompt_pipeline": params.get("prompt_pipeline"),
+        "response_strategy": params.get("response_strategy"),
+        "prompt_only": params.get("prompt_only"),
         "source_dataset": params.get("source_dataset"),
         "source_split": params.get("source_split"),
         "source_prompt_id": params.get("source_prompt_id"),
@@ -652,13 +831,23 @@ def _candidate_record(row: CandidateResponseORM) -> dict[str, Any]:
 
 
 def _target_prompt_count(run: PipelineRunORM) -> int:
+    metadata = dict(run.metadata_ or {})
+    explicit_target = metadata.get("target_prompt_count")
+    if explicit_target is not None:
+        try:
+            return int(explicit_target)
+        except (TypeError, ValueError):
+            pass
+
     n_prompts = run.n_prompts or 0
     if n_prompts <= 0:
         return 0
 
-    languages = [run.requested_language] if run.requested_language else list_language_names()
-    categories = _active_harm_categories()
-    severities = ["S1", "S2", "S3", "S4"]
+    languages = [run.requested_language] if run.requested_language else metadata.get("languages")
+    if not languages:
+        languages = list_language_names()
+    categories = metadata.get("categories") or _active_harm_categories()
+    severities = metadata.get("severities") or ["S1", "S2", "S3", "S4"]
     return len(languages) * len(categories) * len(severities) * n_prompts
 
 
@@ -696,45 +885,39 @@ def _count_candidates(db: Session, run_id: str) -> int:
     )
 
 
-def _group_count(db: Session, column, criterion) -> dict[str, int]:
-    rows = (
-        db.query(column, func.count())
-        .filter(criterion)
-        .group_by(column)
-        .all()
-    )
+def _group_count(db: Session, column, criterion=None) -> dict[str, int]:
+    query = db.query(column, func.count())
+    if criterion is not None:
+        query = query.filter(criterion)
+    rows = query.group_by(column).all()
     return {str(key or "unknown"): int(count or 0) for key, count in rows}
 
 
-def _total_cost(db: Session, run_id: str) -> float:
-    total = (
-        db.query(func.sum(GenerationCostORM.cost_usd))
-        .filter(GenerationCostORM.run_id == run_id)
-        .scalar()
-    )
+def _total_cost(db: Session, run_id: str | None = None) -> float:
+    query = db.query(func.sum(GenerationCostORM.cost_usd))
+    if run_id is not None:
+        query = query.filter(GenerationCostORM.run_id == run_id)
+    total = query.scalar()
     return round(float(total or 0.0), 6)
 
 
-def _cost_by_model(db: Session, run_id: str) -> dict[str, float]:
-    rows = (
-        db.query(GenerationCostORM.model_id, func.sum(GenerationCostORM.cost_usd))
-        .filter(GenerationCostORM.run_id == run_id)
-        .group_by(GenerationCostORM.model_id)
-        .all()
-    )
+def _cost_by_model(db: Session, run_id: str | None = None) -> dict[str, float]:
+    query = db.query(GenerationCostORM.model_id, func.sum(GenerationCostORM.cost_usd))
+    if run_id is not None:
+        query = query.filter(GenerationCostORM.run_id == run_id)
+    rows = query.group_by(GenerationCostORM.model_id).all()
     return {str(model or "unknown"): round(float(cost or 0.0), 6) for model, cost in rows}
 
 
-def _token_totals(db: Session, run_id: str) -> dict[str, int]:
-    row = (
-        db.query(
-            func.sum(GenerationCostORM.prompt_tokens),
-            func.sum(GenerationCostORM.completion_tokens),
-            func.count(GenerationCostORM.id),
-        )
-        .filter(GenerationCostORM.run_id == run_id)
-        .one()
+def _token_totals(db: Session, run_id: str | None = None) -> dict[str, int]:
+    query = db.query(
+        func.sum(GenerationCostORM.prompt_tokens),
+        func.sum(GenerationCostORM.completion_tokens),
+        func.count(GenerationCostORM.id),
     )
+    if run_id is not None:
+        query = query.filter(GenerationCostORM.run_id == run_id)
+    row = query.one()
     input_tokens = int(row[0] or 0)
     output_tokens = int(row[1] or 0)
     return {
@@ -745,32 +928,39 @@ def _token_totals(db: Session, run_id: str) -> dict[str, int]:
     }
 
 
-def _review_stats(db: Session, run_id: str) -> dict[str, Any]:
+def _review_stats(db: Session, run_id: str | None = None) -> dict[str, Any]:
     query = (
         db.query(AnnotationORM)
         .join(CandidateResponseORM, AnnotationORM.candidate_id == CandidateResponseORM.id)
-        .filter(CandidateResponseORM.run_id == run_id)
     )
+    if run_id is not None:
+        query = query.filter(CandidateResponseORM.run_id == run_id)
+    decision_criteria = [AnnotationORM.candidate_id == CandidateResponseORM.id]
+    language_criteria = [AnnotationORM.candidate_id == CandidateResponseORM.id]
+    if run_id is not None:
+        decision_criteria.append(CandidateResponseORM.run_id == run_id)
+        language_criteria.append(CandidateResponseORM.run_id == run_id)
     return {
         "annotations_total": int(query.count() or 0),
         "by_decision": _joined_group_count(
             db,
             AnnotationORM.decision,
-            AnnotationORM.candidate_id == CandidateResponseORM.id,
-            CandidateResponseORM.run_id == run_id,
+            *decision_criteria,
         ),
         "by_language": _joined_group_count(
             db,
             AnnotationORM.language,
-            AnnotationORM.candidate_id == CandidateResponseORM.id,
-            CandidateResponseORM.run_id == run_id,
+            *language_criteria,
         ),
     }
 
 
-def _dataset_item_stats(db: Session, run_id: str) -> dict[str, Any]:
-    criterion = DatasetItemORM.run_id == run_id
-    total = int(db.query(func.count(DatasetItemORM.id)).filter(criterion).scalar() or 0)
+def _dataset_item_stats(db: Session, run_id: str | None = None) -> dict[str, Any]:
+    criterion = DatasetItemORM.run_id == run_id if run_id is not None else None
+    total_query = db.query(func.count(DatasetItemORM.id))
+    if criterion is not None:
+        total_query = total_query.filter(criterion)
+    total = int(total_query.scalar() or 0)
     return {
         "total": total,
         "by_type": _group_count(db, DatasetItemORM.item_type, criterion),
@@ -829,6 +1019,66 @@ def _language_detail(db: Session, run: PipelineRunORM) -> list[dict[str, Any]]:
                     "generated": candidate_generated,
                     "target": candidate_target,
                     "percent": _percent(candidate_generated, candidate_target),
+                    "by_status": _group_count(db, CandidateResponseORM.status, candidate_criterion),
+                    "by_harm_category": _group_count(db, CandidateResponseORM.harm_category, candidate_criterion),
+                    "by_harm_category_labeled": _labeled_category_counts(
+                        _group_count(db, CandidateResponseORM.harm_category, candidate_criterion)
+                    ),
+                    "by_severity": _group_count(db, CandidateResponseORM.severity, candidate_criterion),
+                    "by_severity_labeled": _labeled_severity_counts(
+                        _group_count(db, CandidateResponseORM.severity, candidate_criterion)
+                    ),
+                    "by_response_type": _group_count(db, CandidateResponseORM.response_type, candidate_criterion),
+                    "by_model": _group_count(db, CandidateResponseORM.model_used, candidate_criterion),
+                },
+            }
+        )
+    return rows
+
+
+def _all_language_detail(db: Session) -> list[dict[str, Any]]:
+    prompt_languages = {
+        row[0]
+        for row in db.query(GeneratedPromptORM.language).distinct().all()
+        if row[0]
+    }
+    candidate_languages = {
+        row[0]
+        for row in db.query(CandidateResponseORM.language).distinct().all()
+        if row[0]
+    }
+    rows: list[dict[str, Any]] = []
+    for language in sorted(prompt_languages | candidate_languages):
+        prompt_criterion = GeneratedPromptORM.language == language
+        candidate_criterion = CandidateResponseORM.language == language
+        prompt_generated = int(
+            db.query(func.count(GeneratedPromptORM.id)).filter(prompt_criterion).scalar() or 0
+        )
+        candidate_generated = int(
+            db.query(func.count(CandidateResponseORM.id)).filter(candidate_criterion).scalar() or 0
+        )
+        rows.append(
+            {
+                "language": language,
+                "prompts": {
+                    "generated": prompt_generated,
+                    "target": prompt_generated,
+                    "percent": 100.0 if prompt_generated else 0.0,
+                    "by_status": _group_count(db, GeneratedPromptORM.status, prompt_criterion),
+                    "by_harm_category": _group_count(db, GeneratedPromptORM.harm_category, prompt_criterion),
+                    "by_harm_category_labeled": _labeled_category_counts(
+                        _group_count(db, GeneratedPromptORM.harm_category, prompt_criterion)
+                    ),
+                    "by_severity": _group_count(db, GeneratedPromptORM.severity, prompt_criterion),
+                    "by_severity_labeled": _labeled_severity_counts(
+                        _group_count(db, GeneratedPromptORM.severity, prompt_criterion)
+                    ),
+                    "by_model": _group_count(db, GeneratedPromptORM.model_used, prompt_criterion),
+                },
+                "candidates": {
+                    "generated": candidate_generated,
+                    "target": candidate_generated,
+                    "percent": 100.0 if candidate_generated else 0.0,
                     "by_status": _group_count(db, CandidateResponseORM.status, candidate_criterion),
                     "by_harm_category": _group_count(db, CandidateResponseORM.harm_category, candidate_criterion),
                     "by_harm_category_labeled": _labeled_category_counts(
@@ -926,15 +1176,15 @@ def _candidate_matrix(db: Session, run_id: str) -> list[dict[str, Any]]:
     ]
 
 
-def _joined_group_count(db: Session, column, join_criterion, filter_criterion) -> dict[str, int]:
-    rows = (
+def _joined_group_count(db: Session, column, join_criterion, *filter_criteria) -> dict[str, int]:
+    query = (
         db.query(column, func.count())
         .select_from(AnnotationORM)
         .join(CandidateResponseORM, join_criterion)
-        .filter(filter_criterion)
-        .group_by(column)
-        .all()
     )
+    if filter_criteria:
+        query = query.filter(*filter_criteria)
+    rows = query.group_by(column).all()
     return {str(key or "unknown"): int(count or 0) for key, count in rows}
 
 

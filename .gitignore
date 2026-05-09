@@ -72,3 +72,4 @@ secrets/
 # DVC cache (local)
 .dvc/cache/
 .dvc/tmp/
+data

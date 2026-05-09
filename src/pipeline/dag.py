@@ -23,6 +23,7 @@ import logging
 import os
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 
 import click
@@ -68,6 +69,49 @@ def _generation_mode(params) -> str:
     if isinstance(params, dict):
         return params.get("generation_mode", "native")
     return "native"
+
+
+def _normalize_prompt_generation_mode(mode: str) -> str:
+    aliases = {
+        "native": "native",
+        "pku-adapted": "pku_context_regeneration",
+        "pku_adapted": "pku_context_regeneration",
+        "pku-context": "pku_context_regeneration",
+        "pku-context-regeneration": "pku_context_regeneration",
+        "pku_context_regeneration": "pku_context_regeneration",
+    }
+    return aliases.get(mode, mode)
+
+
+def _prompt_pipeline_name(generation_mode: str) -> str:
+    if generation_mode == "native":
+        return "native_prompt_only"
+    return "pku_context_regeneration_prompt_only"
+
+
+def _matches_prompt_only_generation_mode(params, generation_mode: str) -> bool:
+    if not isinstance(params, dict):
+        return False
+    mode = _generation_mode(params)
+    if generation_mode == "native":
+        return mode == "native" and (
+            params.get("prompt_pipeline") == "native_prompt_only"
+            or params.get("prompt_only") is True
+        )
+    return mode in {"pku_context_regeneration", "pku_adapted"} and (
+        params.get("prompt_pipeline") == "pku_context_regeneration_prompt_only"
+        or params.get("prompt_only") is True
+        or ("prompt_pipeline" not in params and "prompt_only" not in params)
+    )
+
+
+def _validate_run_id(run_id: str) -> str:
+    if len(run_id) > 36:
+        raise click.ClickException(
+            f"--run-id must be 36 characters or fewer; got {len(run_id)}. "
+            "Use a shorter label or omit --run-id to let AfriGuard generate a UUID."
+        )
+    return run_id
 
 # ---------------------------------------------------------------------------
 # CLI group
@@ -269,13 +313,23 @@ def generate(
         return
 
     from sqlalchemy import func
-    from src.storage.db import SessionLocal, GeneratedPromptORM, GenerationCostORM, SourcePromptORM, init_db
+    from src.storage.db import (
+        SessionLocal,
+        GeneratedPromptORM,
+        GenerationCostORM,
+        PipelineRunORM,
+        PipelineStageRunORM,
+        SourcePromptORM,
+        init_db,
+    )
     from src.generation.generation_job import GenerationJob
     from src.generation.pku_adapted_generation_job import PKUAdaptedGenerationJob
     from tqdm import tqdm
 
     init_db()
     run_id = run_id or str(uuid.uuid4())
+    run_id = _validate_run_id(run_id)
+    total_target_prompts = len(languages) * len(categories) * len(severities) * n_prompts
     click.echo(f"   Run ID: {run_id}\n")
 
     with SessionLocal() as session:
@@ -416,25 +470,58 @@ def generate(
 @click.option("--severity", "-s", default=None, help="Severity code (S1-S4)")
 @click.option("--n-prompts", "-n", default=5, show_default=True, help="Prompts per combination")
 @click.option("--model", default=None, help="Override default prompt model")
+@click.option(
+    "--generation-mode",
+    type=click.Choice(["pku-context-regeneration", "pku-context", "pku-adapted", "native"]),
+    default="pku-context-regeneration",
+    show_default=True,
+    help="Prompt-only generation strategy",
+)
 @click.option("--pku-dataset", default=None, help="Restrict PKU source prompts to this dataset")
 @click.option("--run-id", default=None, help="Reuse an existing pipeline run ID")
 @click.option("--workers", default=1, show_default=True, type=int, help="Parallel worker count")
 @click.option("--dry-run", is_flag=True, help="Print config without calling API")
-def generate_prompts(language, tier, category, severity, n_prompts, model, pku_dataset, run_id, workers, dry_run):
-    """Generate PKU-context-regenerated prompts only; responses are batched later."""
+def generate_prompts(
+    language,
+    tier,
+    category,
+    severity,
+    n_prompts,
+    model,
+    generation_mode,
+    pku_dataset,
+    run_id,
+    workers,
+    dry_run,
+):
+    """Generate prompt-only data; responses are batched later."""
     import yaml
     from concurrent.futures import ThreadPoolExecutor, as_completed
     from pathlib import Path
+    from threading import Lock
     from sqlalchemy import func
     from tqdm import tqdm
 
     from src.config.generation import load_generation_config
     from src.config.languages import list_language_names
-    from src.storage.db import SessionLocal, GeneratedPromptORM, GenerationCostORM, SourcePromptORM, init_db
+    from src.storage.db import (
+        SessionLocal,
+        GeneratedPromptORM,
+        GenerationCostORM,
+        PipelineRunORM,
+        PipelineStageRunORM,
+        SourcePromptORM,
+        init_db,
+    )
+    from src.generation.generation_job import GenerationJob
     from src.generation.pku_adapted_generation_job import PKUAdaptedGenerationJob
 
     if workers < 1:
         raise click.ClickException("--workers must be at least 1")
+    prompt_generation_mode = _normalize_prompt_generation_mode(generation_mode)
+    prompt_pipeline = _prompt_pipeline_name(prompt_generation_mode)
+    if prompt_generation_mode == "native" and pku_dataset:
+        raise click.ClickException("--pku-dataset is only valid with PKU-context generation modes.")
 
     generation_config = load_generation_config()
     config_path = Path(__file__).parent.parent.parent / "configs" / "pipeline.yaml"
@@ -454,10 +541,17 @@ def generate_prompts(language, tier, category, severity, n_prompts, model, pku_d
             (row for row in target_config.get("tiers", []) if row.get("id") == tier),
             None,
         )
-        if tier_config is None:
+        if tier_config is None and tier in {"all", "afriguard_40", "afriguard_40_v1"}:
+            languages = [
+                row["name"]
+                for tier_row in target_config.get("tiers", [])
+                for row in tier_row.get("languages", [])
+            ]
+        elif tier_config is None:
             known = ", ".join(row.get("id", "") for row in target_config.get("tiers", []))
-            raise click.ClickException(f"Unknown tier: {tier}. Known tiers: {known}")
-        languages = [row["name"] for row in tier_config.get("languages", [])]
+            raise click.ClickException(f"Unknown tier: {tier}. Known tiers: {known}, all")
+        else:
+            languages = [row["name"] for row in tier_config.get("languages", [])]
         unsupported = [lang for lang in languages if lang not in configured_languages]
         if unsupported:
             raise click.ClickException(
@@ -469,13 +563,16 @@ def generate_prompts(language, tier, category, severity, n_prompts, model, pku_d
     categories = [category] if category else config["active_harm_categories"]
     severities = [severity] if severity else ["S1", "S2", "S3", "S4"]
     run_id = run_id or str(uuid.uuid4())
+    run_id = _validate_run_id(run_id)
 
     total_combinations = len(languages) * len(categories) * len(severities)
+    total_target_prompts = total_combinations * n_prompts
     click.echo(
         f"[>>] Prompt-only plan: {len(languages)} languages × {len(categories)} categories "
         f"× {len(severities)} severities = {total_combinations} combinations\n"
         f"   {n_prompts} prompts per combination\n"
-        f"   Method: pku_context_regeneration\n"
+        f"   Method: {prompt_generation_mode}\n"
+        f"   Prompt pipeline: {prompt_pipeline}\n"
         f"   Model: {model_id}\n"
         f"   Workers: {workers}\n"
         f"   Run ID: {run_id}"
@@ -487,14 +584,102 @@ def generate_prompts(language, tier, category, severity, n_prompts, model, pku_d
 
     init_db()
     with SessionLocal() as session:
-        source_query = session.query(func.count(SourcePromptORM.id))
-        if pku_dataset:
-            source_query = source_query.filter(SourcePromptORM.source_dataset == pku_dataset)
-        source_count = int(source_query.scalar() or 0)
-        if source_count == 0:
-            raise click.ClickException(
-                "No PKU source prompts found. Run `afriguard ingest-pku-prompts` first."
+        now = datetime.now(tz=timezone.utc)
+        monitor_run = session.get(PipelineRunORM, run_id)
+        if monitor_run is None:
+            monitor_run = PipelineRunORM(
+                id=run_id,
+                status="running",
+                current_stage="generate_prompts",
+                requested_language=language,
+                n_prompts=n_prompts,
+                metadata_={
+                    "workflow": "prompt_first",
+                    "command": "generate-prompts",
+                    "tier": tier,
+                    "languages": languages,
+                    "categories": categories,
+                    "severities": severities,
+                    "target_prompt_count": total_target_prompts,
+                    "generation_mode": prompt_generation_mode,
+                    "prompt_pipeline": prompt_pipeline,
+                    "response_strategy": "batch_response_generation",
+                    "workers": workers,
+                    "prompt_only": True,
+                    "resume_enabled": True,
+                },
+                started_at=now,
+                updated_at=now,
             )
+            session.add(monitor_run)
+        else:
+            metadata = dict(monitor_run.metadata_ or {})
+            metadata.update(
+                {
+                    "workflow": "prompt_first",
+                    "command": "generate-prompts",
+                    "tier": tier,
+                    "languages": languages,
+                    "categories": categories,
+                    "severities": severities,
+                    "target_prompt_count": total_target_prompts,
+                    "generation_mode": prompt_generation_mode,
+                    "prompt_pipeline": prompt_pipeline,
+                    "response_strategy": "batch_response_generation",
+                    "workers": workers,
+                    "prompt_only": True,
+                    "resume_enabled": True,
+                }
+            )
+            monitor_run.status = "running"
+            monitor_run.current_stage = "generate_prompts"
+            monitor_run.requested_language = language
+            monitor_run.n_prompts = n_prompts
+            monitor_run.metadata_ = metadata
+            monitor_run.updated_at = now
+
+        stage = (
+            session.query(PipelineStageRunORM)
+            .filter(
+                PipelineStageRunORM.run_id == run_id,
+                PipelineStageRunORM.stage_name == "generate_prompts",
+            )
+            .first()
+        )
+        if stage is None:
+            stage = PipelineStageRunORM(
+                id=str(uuid.uuid4()),
+                run_id=run_id,
+                stage_name="generate_prompts",
+                started_at=now,
+            )
+            session.add(stage)
+        stage.status = "running"
+        stage.error = None
+        stage.updated_at = now
+        stage.attempts = (stage.attempts or 0) + 1
+        stage.metadata_ = {
+            "tier": tier,
+            "languages": languages,
+            "categories": categories,
+            "severities": severities,
+            "target_prompt_count": total_target_prompts,
+            "generation_mode": prompt_generation_mode,
+            "prompt_pipeline": prompt_pipeline,
+            "response_strategy": "batch_response_generation",
+            "workers": workers,
+        }
+        session.commit()
+
+        if prompt_generation_mode == "pku_context_regeneration":
+            source_query = session.query(func.count(SourcePromptORM.id))
+            if pku_dataset:
+                source_query = source_query.filter(SourcePromptORM.source_dataset == pku_dataset)
+            source_count = int(source_query.scalar() or 0)
+            if source_count == 0:
+                raise click.ClickException(
+                    "No PKU source prompts found. Run `afriguard ingest-pku-prompts` first."
+                )
 
         work_items = []
         total_existing = 0
@@ -514,28 +699,58 @@ def generate_prompts(language, tier, category, severity, n_prompts, model, pku_d
                     existing = sum(
                         1
                         for (params,) in existing_rows
-                        if _generation_mode(params) in {"pku_context_regeneration", "pku_adapted"}
+                        if _matches_prompt_only_generation_mode(params, prompt_generation_mode)
                     )
                     remaining = max(0, n_prompts - existing)
                     total_existing += min(existing, n_prompts)
                     if remaining:
                         work_items.append((lang, cat, sev, remaining))
 
+    progress_lock = Lock()
+
+    def _mark_prompt_done(lang: str, cat: str, sev: str) -> None:
+        with progress_lock:
+            bar.update(1)
+            bar.set_postfix(
+                {
+                    "lang": lang,
+                    "cat": cat,
+                    "sev": sev,
+                },
+                refresh=True,
+            )
+
     def _run_item(item):
         lang, cat, sev, remaining = item
         with SessionLocal() as worker_session:
-            job = PKUAdaptedGenerationJob(
-                language=lang,
-                harm_category=cat,
-                severity=sev,
-                model_id=model_id,
-                n_candidates=0,
-                run_id=run_id,
-                prompt_model_id=model_id,
-                source_dataset=pku_dataset,
-                generate_candidates=False,
+            if prompt_generation_mode == "native":
+                job = GenerationJob(
+                    language=lang,
+                    harm_category=cat,
+                    severity=sev,
+                    model_id=model_id,
+                    n_candidates=0,
+                    run_id=run_id,
+                    prompt_model_id=model_id,
+                    generate_candidates=False,
+                )
+            else:
+                job = PKUAdaptedGenerationJob(
+                    language=lang,
+                    harm_category=cat,
+                    severity=sev,
+                    model_id=model_id,
+                    n_candidates=0,
+                    run_id=run_id,
+                    prompt_model_id=model_id,
+                    source_dataset=pku_dataset,
+                    generate_candidates=False,
+                )
+            prompt_ids = job.run(
+                worker_session,
+                n_prompts=remaining,
+                progress_callback=lambda _prompt_id: _mark_prompt_done(lang, cat, sev),
             )
-            prompt_ids = job.run(worker_session, n_prompts=remaining)
             total_cost, api_calls = (
                 worker_session.query(
                     func.coalesce(func.sum(GenerationCostORM.cost_usd), 0.0),
@@ -561,21 +776,43 @@ def generate_prompts(language, tier, category, severity, n_prompts, model, pku_d
                 for future in as_completed(futures):
                     try:
                         lang, cat, sev, count, total_cost, api_calls = future.result()
-                        bar.update(count)
-                        bar.set_postfix(
-                            {
-                                "lang": lang,
-                                "cat": cat,
-                                "sev": sev,
-                                "cost": f"${total_cost:.2f}",
-                                "api": api_calls,
-                            },
-                            refresh=True,
-                        )
+                        with progress_lock:
+                            bar.set_postfix(
+                                {
+                                    "lang": lang,
+                                    "cat": cat,
+                                    "sev": sev,
+                                    "cost": f"${total_cost:.2f}",
+                                    "api": api_calls,
+                                    "done": count,
+                                },
+                                refresh=True,
+                            )
                     except Exception as exc:
-                        tqdm.write(f"  [-] Prompt worker failed: {exc}")
+                        with progress_lock:
+                            tqdm.write(f"  [-] Prompt worker failed: {exc}")
     finally:
         bar.close()
+
+    with SessionLocal() as session:
+        now = datetime.now(tz=timezone.utc)
+        monitor_run = session.get(PipelineRunORM, run_id)
+        if monitor_run:
+            monitor_run.current_stage = "generate_prompts"
+            monitor_run.updated_at = now
+        stage = (
+            session.query(PipelineStageRunORM)
+            .filter(
+                PipelineStageRunORM.run_id == run_id,
+                PipelineStageRunORM.stage_name == "generate_prompts",
+            )
+            .first()
+        )
+        if stage:
+            stage.status = "completed"
+            stage.completed_at = now
+            stage.updated_at = now
+        session.commit()
 
     click.secho(
         f"\n[OK] Prompt generation complete. Run ID: {run_id}\n"
@@ -594,8 +831,9 @@ def generate_prompts(language, tier, category, severity, n_prompts, model, pku_d
 @click.option("--language", "-l", default=None, help="Only prepare prompts for this language")
 @click.option("--limit", default=None, type=int, help="Limit number of prompts included")
 @click.option("--n-candidates", default=None, type=int, help="Candidates per prompt")
+@click.option("--max-requests", default=None, type=int, help="Maximum response requests in this local batch")
 @click.option("--output-dir", default=None, type=click.Path(file_okay=False, path_type=Path))
-def batch_prepare_responses(run_id, model, language, limit, n_candidates, output_dir):
+def batch_prepare_responses(run_id, model, language, limit, n_candidates, max_requests, output_dir):
     """Prepare OpenAI Batch JSONL requests for response generation."""
     from src.config.generation import load_generation_config
     from src.pipeline.batch_responses import prepare_response_batch
@@ -613,14 +851,18 @@ def batch_prepare_responses(run_id, model, language, limit, n_candidates, output
                 language=language,
                 limit=limit,
                 n_candidates=n_candidates,
+                max_requests=max_requests,
             )
+            job_id = job.id
+            request_count = job.request_count
+            input_file_path = job.input_file_path
         except ValueError as exc:
             raise click.ClickException(str(exc)) from exc
     click.secho("[OK] Response batch prepared.", fg="green")
-    click.echo(f"  batch_job_id: {job.id}")
-    click.echo(f"  requests:     {job.request_count}")
-    click.echo(f"  input_file:   {job.input_file_path}")
-    click.echo(f"Next: afriguard batch-submit --batch-job-id {job.id}")
+    click.echo(f"  batch_job_id: {job_id}")
+    click.echo(f"  requests:     {request_count}")
+    click.echo(f"  input_file:   {input_file_path}")
+    click.echo(f"Next: afriguard batch-submit --batch-job-id {job_id}")
 
 
 @cli.command("batch-submit")
@@ -632,10 +874,13 @@ def batch_submit(batch_job_id):
 
     with SessionLocal() as session:
         job = submit_batch_job(session, batch_job_id)
+        job_id = job.id
+        openai_batch_id = job.openai_batch_id
+        status = job.status
     click.secho("[OK] Batch submitted.", fg="green")
-    click.echo(f"  batch_job_id:    {job.id}")
-    click.echo(f"  openai_batch_id: {job.openai_batch_id}")
-    click.echo(f"  status:          {job.status}")
+    click.echo(f"  batch_job_id:    {job_id}")
+    click.echo(f"  openai_batch_id: {openai_batch_id}")
+    click.echo(f"  status:          {status}")
 
 
 @cli.command("batch-status")
@@ -648,17 +893,22 @@ def batch_status(batch_job_id):
 
     with SessionLocal() as session:
         job = refresh_batch_status(session, batch_job_id)
+        job_id = job.id
+        openai_batch_id = job.openai_batch_id
+        status = job.status
+        output_file_id = job.openai_output_file_id or "-"
+        error_file_id = job.openai_error_file_id or "-"
         request_counts = (
             session.query(BatchRequestORM.status, func.count(BatchRequestORM.id))
-            .filter(BatchRequestORM.batch_job_id == job.id)
+            .filter(BatchRequestORM.batch_job_id == job_id)
             .group_by(BatchRequestORM.status)
             .all()
         )
-    click.secho(f"Batch job: {job.id}", fg="cyan")
-    click.echo(f"  openai_batch_id: {job.openai_batch_id}")
-    click.echo(f"  status:          {job.status}")
-    click.echo(f"  output_file_id:  {job.openai_output_file_id or '-'}")
-    click.echo(f"  error_file_id:   {job.openai_error_file_id or '-'}")
+    click.secho(f"Batch job: {job_id}", fg="cyan")
+    click.echo(f"  openai_batch_id: {openai_batch_id}")
+    click.echo(f"  status:          {status}")
+    click.echo(f"  output_file_id:  {output_file_id}")
+    click.echo(f"  error_file_id:   {error_file_id}")
     click.echo("  local requests:")
     for status, count in request_counts:
         click.echo(f"    {status}: {count}")

@@ -2,7 +2,7 @@
 AfriGuard — Generation: CostTracker
 
 Records per-job API costs to the database and enforces budget limits.
-Alerts at 80% of budget and hard-stops at 100%.
+Raises only when the hard budget limit is reached.
 """
 
 from __future__ import annotations
@@ -21,8 +21,7 @@ from src.storage.db import GenerationCostORM
 load_project_env()
 logger = structlog.get_logger(__name__)
 
-_ALERT_THRESHOLD = float(os.environ.get("PIPELINE_BUDGET_ALERT_USD", "50.0"))
-_HARD_LIMIT = float(os.environ.get("PIPELINE_BUDGET_HARD_LIMIT_USD", "200.0"))
+_HARD_LIMIT = float(os.environ.get("PIPELINE_BUDGET_HARD_LIMIT_USD", "500.0"))
 
 
 class BudgetExceededError(Exception):
@@ -76,13 +75,6 @@ class CostTracker:
             raise BudgetExceededError(
                 f"Hard budget limit of ${_HARD_LIMIT:.2f} exceeded. "
                 f"Current total: ${total:.2f}. Stop pipeline and review."
-            )
-        if total >= _ALERT_THRESHOLD:
-            logger.warning(
-                "cost_tracker.budget_alert",
-                total_usd=round(total, 2),
-                alert_threshold=_ALERT_THRESHOLD,
-                hard_limit=_HARD_LIMIT,
             )
 
     def _total_cost(self, session: Session) -> float:

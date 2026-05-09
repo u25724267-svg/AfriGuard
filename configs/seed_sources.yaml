@@ -431,6 +431,50 @@ sources:
     license: "AfriGuard-curated summary; verify underlying public-source references before public release"
     notes: "Emergency first-wave civic grounding while fuller country legal packs are acquired."
 
+  - id: "afriguard_40_east_great_lakes_civic_context"
+    name: "AfriGuard 40 East Africa and Great Lakes Civic Context"
+    description: "Curated broad civic context for East Africa and Great Lakes target languages"
+    type: "local"
+    local_path: "data/seeds/legal/afriguard_40_east_great_lakes_civic_context.txt"
+    languages: ["luganda", "kirundi", "kikuyu", "dholuo"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Broad first-pass context for all-40 pilots; replace with country-specific legal packs as they land."
+
+  - id: "afriguard_40_west_sahel_civic_context"
+    name: "AfriGuard 40 West Africa and Sahel Civic Context"
+    description: "Curated broad civic context for West Africa and Sahel target languages"
+    type: "local"
+    local_path: "data/seeds/legal/afriguard_40_west_sahel_civic_context.txt"
+    languages: ["bambara", "wolof", "fulfulde", "moore", "ewe", "kanuri", "tiv", "ibibio_efik", "mandinka"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Broad first-pass context for all-40 pilots; replace with country-specific legal packs as they land."
+
+  - id: "afriguard_40_southern_africa_civic_context"
+    name: "AfriGuard 40 Southern Africa Civic Context"
+    description: "Curated broad civic context for Southern Africa target languages"
+    type: "local"
+    local_path: "data/seeds/legal/afriguard_40_southern_africa_civic_context.txt"
+    languages: ["bemba", "sesotho", "setswana", "xitsonga", "tshivenda"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Broad first-pass context for all-40 pilots; complements existing Chichewa, Sepedi, Shona, and Yao context."
+
+  - id: "afriguard_40_central_nile_indian_ocean_civic_context"
+    name: "AfriGuard 40 Central Africa, Nile Basin, and Indian Ocean Civic Context"
+    description: "Curated broad civic context for Central Africa, Nile Basin, and Indian Ocean target languages"
+    type: "local"
+    local_path: "data/seeds/legal/afriguard_40_central_nile_indian_ocean_civic_context.txt"
+    languages: ["malagasy", "kikongo", "tshiluba", "dinka"]
+    harm_domains: ["H01", "H02", "H03", "H04", "H05", "H06", "H07", "H08", "H09", "H10", "H11", "context"]
+    text_column: "text"
+    license: "AfriGuard-curated summary; verify underlying public-source references before public release"
+    notes: "Broad first-pass context for all-40 pilots; complements existing Lingala context."
+
   - id: "shona_slang_conversational_ai"
     name: "Shona Slang Conversational AI"
     description: >
@@ -457,7 +501,7 @@ sources:
     description: "Hand-curated list of culturally authentic names, places, and expressions per language"
     type: "local"
     local_path: "data/seeds/custom/afriguard_lexicon.json"
-    languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "sepedi", "chichewa", "northern_sotho", "yao"]
+    languages: ["swahili", "hausa", "yoruba", "igbo", "amharic", "oromo", "somali", "shona", "kinyarwanda", "tigrinya", "zulu", "xhosa", "nigerian_pidgin", "akan_twi", "lingala", "luganda", "kirundi", "bambara", "wolof", "fulfulde", "moore", "ewe", "kikuyu", "dholuo", "chichewa", "bemba", "sesotho", "setswana", "sepedi", "xitsonga", "tshivenda", "malagasy", "kikongo", "tshiluba", "dinka", "kanuri", "tiv", "ibibio_efik", "mandinka", "yao", "northern_sotho"]
     harm_domains: ["entities"]
     text_column: "name"
     license: "AfriGuard (MIT)"

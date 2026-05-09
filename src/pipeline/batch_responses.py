@@ -130,6 +130,7 @@ def prepare_response_batch(
     language: str | None = None,
     limit: int | None = None,
     n_candidates: int | None = None,
+    max_requests: int | None = None,
 ) -> BatchJobORM:
     """Create a local response-generation JSONL file and DB batch records."""
     generation_config = load_generation_config()
@@ -144,6 +145,8 @@ def prepare_response_batch(
     ]
     if not response_plan:
         raise ValueError("n_candidates must produce at least one response request.")
+    if max_requests is not None and max_requests < 1:
+        raise ValueError("max_requests must be at least 1.")
 
     query = (
         session.query(GeneratedPromptORM)
@@ -168,23 +171,37 @@ def prepare_response_batch(
 
     builder = PromptBuilder()
     request_count = 0
+    reached_request_cap = False
+    existing_custom_ids = {
+        row[0]
+        for row in session.query(BatchRequestORM.custom_id)
+        .filter(
+            BatchRequestORM.stage == "response_generation",
+            BatchRequestORM.custom_id.like(f"resp:{_safe_custom_part(run_id)}:%"),
+        )
+        .all()
+    }
     with input_path.open("w", encoding="utf-8") as f:
         for prompt in prompts:
-            existing = (
-                session.query(BatchRequestORM.id)
-                .filter(
-                    BatchRequestORM.stage == "response_generation",
-                    BatchRequestORM.prompt_id == prompt.id,
-                )
-                .first()
-            )
-            if existing:
-                continue
-
+            if reached_request_cap:
+                break
             generation_params = prompt.generation_params if isinstance(prompt.generation_params, dict) else {}
             source_prompt_id = generation_params.get("source_prompt_id")
 
             for candidate_index, (response_type, response_offset) in enumerate(response_plan):
+                if max_requests is not None and request_count >= max_requests:
+                    reached_request_cap = True
+                    break
+                custom_id = (
+                    "resp:"
+                    f"{_safe_custom_part(run_id)}:"
+                    f"{_safe_custom_part(prompt.id)}:"
+                    f"{response_type}:"
+                    f"{response_offset}"
+                )
+                if custom_id in existing_custom_ids:
+                    continue
+
                 system_prompt = builder.build_response_system_prompt(
                     language=prompt.language,
                     harm_category=prompt.harm_category,
@@ -197,13 +214,6 @@ def prepare_response_batch(
                     user_message=prompt.prompt_text,
                     temperature=generation_config.response_generation.temperature,
                     max_tokens=generation_config.response_generation.max_tokens,
-                )
-                custom_id = (
-                    "resp:"
-                    f"{_safe_custom_part(run_id)}:"
-                    f"{_safe_custom_part(prompt.id)}:"
-                    f"{response_type}:"
-                    f"{response_offset}"
                 )
                 request_line = {
                     "custom_id": custom_id,
@@ -233,6 +243,7 @@ def prepare_response_batch(
                         updated_at=_utcnow(),
                     )
                 )
+                existing_custom_ids.add(custom_id)
                 request_count += 1
 
     if request_count == 0:
@@ -253,6 +264,7 @@ def prepare_response_batch(
             "safe_responses": n_safe,
             "unsafe_responses": n_unsafe,
             "language": language,
+            "max_requests": max_requests,
         },
         created_at=_utcnow(),
         updated_at=_utcnow(),

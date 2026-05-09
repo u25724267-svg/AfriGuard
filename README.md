@@ -168,7 +168,7 @@ afriguard generate-prompts \
 
 afriguard batch-prepare-responses \
   --run-id "$RUN_ID" \
-  --n-candidates 4 \
+  --n-candidates 6 \
   --model gpt-5.4
 
 # Copy the printed batch_job_id, then submit it:
@@ -191,8 +191,39 @@ The default Tier 1 command above creates 3,300 prompts:
 15 languages × 11 categories × 4 severities × 5 prompts
 ```
 
-With `--n-candidates 4`, the response batch contains up to 13,200 response
-requests.
+With `--n-candidates 6`, the response batch contains up to 19,800 response
+requests: 3 safe and 3 unsafe candidates for every prompt. Severity coverage
+comes from the prompt matrix itself (`S1` through `S4` for every selected
+language and harm category).
+
+### Full 40-Language Response Batches
+
+For the full 40-language prompt run, keep using the same prompt-generation
+`RUN_ID`. Preparing responses is resumable at the individual response-slot
+level, so an existing 4-candidate prepared batch can be submitted and later
+topped up to 6 candidates per prompt.
+
+```bash
+RUN_ID="tier1-budget200-20260508-084903"
+
+afriguard batch-prepare-responses \
+  --run-id "$RUN_ID" \
+  --n-candidates 6 \
+  --model gpt-5.4 \
+  --max-requests 50000
+```
+
+Repeat `batch-prepare-responses` until it prints `No new response batch
+requests to prepare.` Submit each printed `BATCH_JOB_ID` separately:
+
+```bash
+afriguard batch-submit --batch-job-id <BATCH_JOB_ID>
+afriguard batch-status --batch-job-id <BATCH_JOB_ID>
+afriguard batch-sync --batch-job-id <BATCH_JOB_ID>
+```
+
+A complete 40-language run with 35,200 prompts and 6 candidates per prompt
+targets 211,200 response requests.
 
 ### Resume Rules
 
@@ -225,7 +256,7 @@ If no usable batch exists, prepare a new one from the same `RUN_ID`:
 ```bash
 afriguard batch-prepare-responses \
   --run-id "$RUN_ID" \
-  --n-candidates 4 \
+  --n-candidates 6 \
   --model gpt-5.4
 ```
 
@@ -264,10 +295,12 @@ afriguard ingest-pku-prompts --max-samples 20
 
 ### 3. Generate Prompts Only
 
-This command uses PKU + context injection regeneration:
+This command uses PKU + context injection regeneration, which is the default
+prompt-only mode:
 
 ```bash
 afriguard generate-prompts \
+  --generation-mode pku-context-regeneration \
   --language shona \
   --category H03 \
   --severity S2 \
@@ -279,6 +312,27 @@ afriguard generate-prompts \
 Copy the printed `Run ID`. The generated prompts are stored with
 `status=pending_response`; candidate responses are generated later through
 Batch API.
+
+Native prompt-only generation uses the same worker pool, progress bar, resume
+logic, monitor metadata, and Batch API response stage, but it creates AfriGuard
+prompts from scratch instead of regenerating from PKU source prompts:
+
+```bash
+afriguard generate-prompts \
+  --generation-mode native \
+  --tier all \
+  --n-prompts 4 \
+  --workers 6 \
+  --model gpt-5.4 \
+  --run-id "$RUN_ID"
+```
+
+Prompts are distinguishable through `generation_params.generation_mode`,
+`generation_params.prompt_pipeline`, and `generation_params.response_strategy`.
+Native prompt-only rows use `generation_mode=native` and
+`prompt_pipeline=native_prompt_only`; PKU context rows use
+`generation_mode=pku_context_regeneration` and
+`prompt_pipeline=pku_context_regeneration_prompt_only`.
 
 For a broader currently configured-language run:
 
@@ -309,7 +363,7 @@ Use the same `RUN_ID` if you need to resume the prompt-generation stage.
 ```bash
 afriguard batch-prepare-responses \
   --run-id <RUN_ID> \
-  --n-candidates 4 \
+  --n-candidates 6 \
   --model gpt-5.4
 ```
 
@@ -462,7 +516,7 @@ afriguard bootstrap-db        Initialize database
 afriguard ingest-seeds        Fetch seed datasets from HuggingFace + local
 afriguard ingest-pku-prompts  Import PKU source prompts
 afriguard generate            Generate prompts and candidate responses
-afriguard generate-prompts    Generate PKU-context prompts only, with --workers/--tier
+afriguard generate-prompts    Generate prompt-only data, with --generation-mode/--workers/--tier
 afriguard batch-prepare-responses Prepare response-generation Batch API JSONL
 afriguard batch-submit        Submit a prepared OpenAI Batch API job
 afriguard batch-status        Refresh and show Batch API job status

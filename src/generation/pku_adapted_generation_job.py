@@ -233,6 +233,16 @@ class PKUAdaptedGenerationJob:
             {
                 "generation_mode": "pku_context_regeneration",
                 "legacy_generation_mode": "pku_adapted",
+                "prompt_pipeline": (
+                    "pku_context_regeneration_inline"
+                    if self.generate_candidates
+                    else "pku_context_regeneration_prompt_only"
+                ),
+                "response_strategy": (
+                    "inline_generation"
+                    if self.generate_candidates
+                    else "batch_response_generation"
+                ),
                 "source_dataset": source_prompt.source_dataset,
                 "source_split": source_prompt.source_split,
                 "source_prompt_table_id": source_prompt.id,

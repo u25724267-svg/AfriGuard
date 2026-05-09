@@ -299,5 +299,115 @@
       "Radio Okapi", "Vodacom Congo", "Police Nationale Congolaise",
       "University of Kinshasa", "Commission Electorale Nationale Independante"
     ]
+  },
+  "luganda": {
+    "person_names": ["Nakato", "Kato", "Aisha", "Moses", "Namukasa", "Ssentongo"],
+    "place_names": ["Kampala", "Jinja", "Masaka", "Mbarara", "Wakiso", "Mukono"],
+    "organizations": ["Uganda Police Force", "NIRA Uganda", "Makerere University", "MTN Uganda"]
+  },
+  "kirundi": {
+    "person_names": ["Jean", "Aline", "Ndayisaba", "Claudine", "Pacifique", "Esperance"],
+    "place_names": ["Bujumbura", "Gitega", "Ngozi", "Rumonge", "Muyinga", "Bururi"],
+    "organizations": ["Police Nationale du Burundi", "Universite du Burundi", "Econet Leo", "Regideso"]
+  },
+  "bambara": {
+    "person_names": ["Mamadou", "Aminata", "Oumar", "Fatoumata", "Seydou", "Awa"],
+    "place_names": ["Bamako", "Segou", "Sikasso", "Mopti", "Kayes", "Koulikoro"],
+    "organizations": ["Orange Mali", "Police Nationale du Mali", "Universite de Bamako", "Sotelma"]
+  },
+  "wolof": {
+    "person_names": ["Moussa", "Aminata", "Cheikh", "Fatou", "Ibrahima", "Aissatou"],
+    "place_names": ["Dakar", "Touba", "Thies", "Saint-Louis", "Kaolack", "Ziguinchor"],
+    "organizations": ["Sonatel", "Police Nationale Senegal", "Universite Cheikh Anta Diop", "Commission Electorale Nationale Autonome"]
+  },
+  "fulfulde": {
+    "person_names": ["Amadou", "Aissatou", "Bello", "Fatimata", "Moussa", "Hadiza"],
+    "place_names": ["Garoua", "Maroua", "Kano", "Sokoto", "Niamey", "Futa Toro"],
+    "organizations": ["Miyetti Allah", "Radio Gotel", "Nigerian Police Force", "Orange Niger"]
+  },
+  "moore": {
+    "person_names": ["Ouedraogo", "Awa", "Issa", "Fatimata", "Seydou", "Adama"],
+    "place_names": ["Ouagadougou", "Koudougou", "Bobo-Dioulasso", "Kaya", "Tenkodogo", "Ouahigouya"],
+    "organizations": ["ONATEL", "Police Nationale Burkina Faso", "Universite Joseph Ki-Zerbo", "SONABEL"]
+  },
+  "ewe": {
+    "person_names": ["Kofi", "Afi", "Komla", "Esi", "Sena", "Dzifa"],
+    "place_names": ["Ho", "Keta", "Aflao", "Lome", "Anloga", "Hohoe"],
+    "organizations": ["Ghana Police Service", "University of Health and Allied Sciences", "Togo Telecom", "National Communications Authority Ghana"]
+  },
+  "kikuyu": {
+    "person_names": ["Wanjiku", "Kamau", "Nyambura", "Karanja", "Wairimu", "Mwangi"],
+    "place_names": ["Nyeri", "Muranga", "Kiambu", "Thika", "Nakuru", "Nairobi"],
+    "organizations": ["Safaricom", "Kenya Police Service", "Kenyatta University", "Kiambu County Government"]
+  },
+  "dholuo": {
+    "person_names": ["Achieng", "Odhiambo", "Atieno", "Ochieng", "Akoth", "Otieno"],
+    "place_names": ["Kisumu", "Siaya", "Homa Bay", "Migori", "Bondo", "Kendu Bay"],
+    "organizations": ["Kisumu County Government", "Kenya Police Service", "Jaramogi Oginga Odinga University", "Safaricom"]
+  },
+  "bemba": {
+    "person_names": ["Chanda", "Mutale", "Bwalya", "Mumba", "Mwanza", "Kabwe"],
+    "place_names": ["Lusaka", "Kitwe", "Ndola", "Kasama", "Mansa", "Chingola"],
+    "organizations": ["Zambia Police Service", "Zamtel", "University of Zambia", "Bank of Zambia"]
+  },
+  "sesotho": {
+    "person_names": ["Thabo", "Masechaba", "Lerato", "Mpho", "Kabelo", "Palesa"],
+    "place_names": ["Maseru", "Leribe", "Mafeteng", "Quthing", "Bloemfontein", "Welkom"],
+    "organizations": ["Lesotho Mounted Police Service", "Vodacom Lesotho", "National University of Lesotho", "SASSA Free State"]
+  },
+  "setswana": {
+    "person_names": ["Kagiso", "Boitumelo", "Thato", "Mpho", "Neo", "Keabetswe"],
+    "place_names": ["Gaborone", "Francistown", "Molepolole", "Maun", "Rustenburg", "Mahikeng"],
+    "organizations": ["Botswana Police Service", "Mascom", "University of Botswana", "SASSA North West"]
+  },
+  "xitsonga": {
+    "person_names": ["Risimati", "Tintswalo", "Hanyani", "Vukosi", "Nhlamulo", "Tsakani"],
+    "place_names": ["Giyani", "Malamulele", "Tzaneen", "Bushbuckridge", "Maputo", "Xai-Xai"],
+    "organizations": ["Limpopo Department of Health", "SAPS Limpopo", "University of Limpopo", "Vodacom Mozambique"]
+  },
+  "tshivenda": {
+    "person_names": ["Mpho", "Rendani", "Takalani", "Lufuno", "Rotondwa", "Ndivhuwo"],
+    "place_names": ["Thohoyandou", "Sibasa", "Makhado", "Musina", "Louis Trichardt", "Beitbridge"],
+    "organizations": ["University of Venda", "SAPS Limpopo", "Vhembe District Municipality", "SASSA Limpopo"]
+  },
+  "malagasy": {
+    "person_names": ["Andry", "Miora", "Hery", "Fanja", "Tiana", "Lova"],
+    "place_names": ["Antananarivo", "Toamasina", "Antsirabe", "Mahajanga", "Fianarantsoa", "Toliara"],
+    "organizations": ["Police Nationale Madagascar", "Telma Madagascar", "Universite d'Antananarivo", "BNI Madagascar"]
+  },
+  "kikongo": {
+    "person_names": ["Kiala", "Mavungu", "Nsoki", "Lutete", "Makaya", "Nsimba"],
+    "place_names": ["Matadi", "Boma", "Mbanza-Ngungu", "Kimpese", "Pointe-Noire", "Uige"],
+    "organizations": ["Police Nationale Congolaise", "Vodacom Congo", "University of Kongo", "Radio Okapi"]
+  },
+  "tshiluba": {
+    "person_names": ["Tshibangu", "Mbuyi", "Kabongo", "Kalala", "Ilunga", "Mutombo"],
+    "place_names": ["Mbuji-Mayi", "Kananga", "Tshikapa", "Mwene-Ditu", "Luebo", "Lusambo"],
+    "organizations": ["Police Nationale Congolaise", "Vodacom Congo", "Universite de Mbuji-Mayi", "Radio Okapi"]
+  },
+  "dinka": {
+    "person_names": ["Deng", "Ayen", "Mabior", "Achol", "Garang", "Nyandeng"],
+    "place_names": ["Juba", "Bor", "Wau", "Rumbek", "Aweil", "Malakal"],
+    "organizations": ["South Sudan National Police Service", "University of Juba", "MTN South Sudan", "Radio Miraya"]
+  },
+  "kanuri": {
+    "person_names": ["Bukarti", "Falmata", "Kaka", "Aisha", "Modu", "Zanna"],
+    "place_names": ["Maiduguri", "Borno", "Damaturu", "Diffa", "N'Djamena", "Kukawa"],
+    "organizations": ["Borno State Emergency Management Agency", "Nigerian Police Force", "University of Maiduguri", "Radio Ndarason"]
+  },
+  "tiv": {
+    "person_names": ["Terhemba", "Dooshima", "Tersoo", "Msendoo", "Aondona", "Ngutor"],
+    "place_names": ["Makurdi", "Gboko", "Katsina-Ala", "Vandeikya", "Otukpo", "Wukari"],
+    "organizations": ["Benue State University", "Nigerian Police Force Benue Command", "EFCC", "Benue State Emergency Management Agency"]
+  },
+  "ibibio_efik": {
+    "person_names": ["Uduak", "Iniobong", "Ekaette", "Anietie", "Mfon", "Ubong"],
+    "place_names": ["Uyo", "Calabar", "Ikot Ekpene", "Eket", "Oron", "Ikot Abasi"],
+    "organizations": ["University of Uyo", "University of Calabar Teaching Hospital", "Nigerian Police Force Akwa Ibom Command", "EFCC"]
+  },
+  "mandinka": {
+    "person_names": ["Lamin", "Fatou", "Ousman", "Awa", "Modou", "Mariama"],
+    "place_names": ["Banjul", "Brikama", "Serekunda", "Kaolack", "Kolda", "Basse"],
+    "organizations": ["Gambia Police Force", "QCell", "University of The Gambia", "Independent Electoral Commission Gambia"]
   }
 }
