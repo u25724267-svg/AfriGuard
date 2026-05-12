@@ -31,3 +31,7 @@ language_detection:
   # Confidence assigned when the LLM fallback fails but the target language is
   # low-resource and should not be dropped too aggressively.
   llm_failure_fallback_confidence: 0.40
+
+  # Keep language filtering local by default. Enable only for a targeted audit
+  # pass, because this can spend OpenAI credits.
+  llm_fallback_enabled: false

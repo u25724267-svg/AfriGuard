@@ -131,6 +131,8 @@ def prepare_response_batch(
     limit: int | None = None,
     n_candidates: int | None = None,
     max_requests: int | None = None,
+    shard_index: int | None = None,
+    shard_count: int | None = None,
 ) -> BatchJobORM:
     """Create a local response-generation JSONL file and DB batch records."""
     generation_config = load_generation_config()
@@ -147,6 +149,13 @@ def prepare_response_batch(
         raise ValueError("n_candidates must produce at least one response request.")
     if max_requests is not None and max_requests < 1:
         raise ValueError("max_requests must be at least 1.")
+    if (shard_index is None) != (shard_count is None):
+        raise ValueError("shard_index and shard_count must be provided together.")
+    if shard_count is not None:
+        if shard_count < 1:
+            raise ValueError("shard_count must be at least 1.")
+        if shard_index is None or shard_index < 0 or shard_index >= shard_count:
+            raise ValueError("shard_index must be between 0 and shard_count - 1.")
 
     query = (
         session.query(GeneratedPromptORM)
@@ -158,9 +167,15 @@ def prepare_response_batch(
     )
     if language:
         query = query.filter(GeneratedPromptORM.language == language)
-    if limit:
-        query = query.limit(limit)
     prompts = query.all()
+    if shard_count is not None:
+        prompts = [
+            prompt
+            for index, prompt in enumerate(prompts)
+            if index % shard_count == shard_index
+        ]
+    if limit:
+        prompts = prompts[:limit]
     if not prompts:
         raise ValueError(f"No prompts found for run_id={run_id}.")
 
@@ -265,6 +280,8 @@ def prepare_response_batch(
             "unsafe_responses": n_unsafe,
             "language": language,
             "max_requests": max_requests,
+            "shard_index": shard_index,
+            "shard_count": shard_count,
         },
         created_at=_utcnow(),
         updated_at=_utcnow(),
@@ -337,16 +354,35 @@ def sync_response_batch(session: Session, batch_job_id: str) -> tuple[int, int]:
         raise ValueError("Completed batch has no output file ID.")
 
     client = _openai_client()
-    output_text = _read_file_content(client, job.openai_output_file_id)
     output_path = Path(job.output_file_path) if job.output_file_path else (
         Path(job.input_file_path or ".").with_suffix(".output.jsonl")
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(output_text, encoding="utf-8")
+    if output_path.exists():
+        output_text = output_path.read_text(encoding="utf-8")
+    else:
+        output_text = _read_file_content(client, job.openai_output_file_id)
+        output_path.write_text(output_text, encoding="utf-8")
     job.output_file_path = str(output_path)
+    if job.openai_error_file_id:
+        error_path = Path(job.error_file_path) if job.error_file_path else (
+            Path(job.input_file_path or ".").with_suffix(".error.jsonl")
+        )
+        error_path.parent.mkdir(parents=True, exist_ok=True)
+        if not error_path.exists():
+            error_path.write_text(
+                _read_file_content(client, job.openai_error_file_id),
+                encoding="utf-8",
+            )
+        job.error_file_path = str(error_path)
+    session.commit()
 
     synced = 0
     failed = 0
+    changed_since_commit = 0
+    commit_every = int(os.environ.get("BATCH_SYNC_COMMIT_EVERY", "1000"))
+    if commit_every < 1:
+        commit_every = 1000
     cost_tracker = CostTracker()
     configs = _load_model_configs()
     model_config = configs.get(job.model_used, {})
@@ -378,6 +414,11 @@ def sync_response_batch(session: Session, batch_job_id: str) -> tuple[int, int]:
             req.status = "failed"
             req.error = json.dumps(error or body, ensure_ascii=False)
             failed += 1
+            changed_since_commit += 1
+            if changed_since_commit >= commit_every:
+                job.updated_at = _utcnow()
+                session.commit()
+                changed_since_commit = 0
             continue
 
         prompt = session.get(GeneratedPromptORM, req.prompt_id)
@@ -385,6 +426,11 @@ def sync_response_batch(session: Session, batch_job_id: str) -> tuple[int, int]:
             req.status = "failed"
             req.error = "Prompt not found during sync."
             failed += 1
+            changed_since_commit += 1
+            if changed_since_commit >= commit_every:
+                job.updated_at = _utcnow()
+                session.commit()
+                changed_since_commit = 0
             continue
 
         text = _extract_choice_text(body)
@@ -439,6 +485,11 @@ def sync_response_batch(session: Session, batch_job_id: str) -> tuple[int, int]:
         req.status = "synced"
         prompt.status = "generated"
         synced += 1
+        changed_since_commit += 1
+        if changed_since_commit >= commit_every:
+            job.updated_at = _utcnow()
+            session.commit()
+            changed_since_commit = 0
 
     job.status = "synced"
     job.updated_at = _utcnow()

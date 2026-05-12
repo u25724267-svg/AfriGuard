@@ -21,7 +21,7 @@ from src.storage.db import GenerationCostORM
 load_project_env()
 logger = structlog.get_logger(__name__)
 
-_HARD_LIMIT = float(os.environ.get("PIPELINE_BUDGET_HARD_LIMIT_USD", "500.0"))
+_HARD_LIMIT = float(os.environ.get("PIPELINE_BUDGET_HARD_LIMIT_USD", "1500.0"))
 
 
 class BudgetExceededError(Exception):
@@ -57,15 +57,12 @@ class CostTracker:
             created_at=datetime.now(tz=timezone.utc),
         )
         session.add(orm)
-        session.flush()
 
-        total = self._total_cost(session)
         logger.info(
             "cost_tracker.recorded",
             model=model_id,
             job_type=job_type,
             cost_usd=round(cost_usd, 4),
-            total_usd=round(total, 4),
         )
 
     def check_budget(self, session: Session) -> None:

@@ -24,6 +24,13 @@ def _env_int(name: str, default: int) -> int:
     return int(value) if value not in (None, "") else default
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.environ.get(name)
+    if value in (None, ""):
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 @dataclass(frozen=True)
 class LanguageDetectionConfig:
     min_text_chars: int
@@ -31,6 +38,7 @@ class LanguageDetectionConfig:
     default_threshold: float
     low_resource_threshold: float
     llm_failure_fallback_confidence: float
+    llm_fallback_enabled: bool
 
 
 @dataclass(frozen=True)
@@ -86,6 +94,10 @@ def load_filtering_config(
             llm_failure_fallback_confidence=_env_float(
                 "LANGUAGE_DETECTION_LLM_FAILURE_CONFIDENCE",
                 float(language.get("llm_failure_fallback_confidence", 0.40)),
+            ),
+            llm_fallback_enabled=_env_bool(
+                "LANGUAGE_DETECTION_LLM_FALLBACK_ENABLED",
+                bool(language.get("llm_fallback_enabled", False)),
             ),
         ),
     )

@@ -589,6 +589,51 @@ Environment variables in `.env` can still override these defaults for a
 particular deployment, but the project-level policy should be changed in
 `configs/filtering.yaml`.
 
+Language-ID mappings and GlotLID-specific thresholds live in
+`configs/language_id.yaml`. This is the main reviewer-editable file for:
+
+- AfriGuard language name to GlotLID label mappings
+- accepted labels versus related labels
+- contaminant labels such as English, French, Portuguese, Arabic, and Afrikaans
+- per-language confidence thresholds
+- short-text thresholds
+- languages that still require calibration review
+
+To inspect the policy as a table:
+
+```bash
+afriguard lid-config --audit
+```
+
+To inspect one language:
+
+```bash
+afriguard lid-config --language swahili
+```
+
+To test GlotLID only against a read-only database sample:
+
+```bash
+afriguard lid-check --run-id <RUN_ID> --limit 20
+```
+
+This does not run quality scoring, similarity filtering, deduplication, or
+status updates. It is intended for language-ID calibration before running the
+full `afriguard filter` command.
+
+GlotLID runs locally through a fastText model. Install the optional dependency
+and point AfriGuard at the model file:
+
+```bash
+pip install -e ".[lid]"
+export GLOTLID_MODEL_PATH=/path/to/glotlid/model.bin
+```
+
+If no GlotLID model is configured, filtering falls back to the existing local
+`langdetect`/`langid` path. LLM fallback is disabled by default so filtering
+does not spend OpenAI credits unless `LANGUAGE_DETECTION_LLM_FALLBACK_ENABLED`
+is explicitly set.
+
 ## Editing Review Sampling
 
 Frequently tuned human-review sampling settings live in

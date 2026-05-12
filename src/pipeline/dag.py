@@ -832,8 +832,20 @@ def generate_prompts(
 @click.option("--limit", default=None, type=int, help="Limit number of prompts included")
 @click.option("--n-candidates", default=None, type=int, help="Candidates per prompt")
 @click.option("--max-requests", default=None, type=int, help="Maximum response requests in this local batch")
+@click.option("--shard-index", default=None, type=int, help="Zero-based shard index for parallel preparation")
+@click.option("--shard-count", default=None, type=int, help="Total number of parallel preparation shards")
 @click.option("--output-dir", default=None, type=click.Path(file_okay=False, path_type=Path))
-def batch_prepare_responses(run_id, model, language, limit, n_candidates, max_requests, output_dir):
+def batch_prepare_responses(
+    run_id,
+    model,
+    language,
+    limit,
+    n_candidates,
+    max_requests,
+    shard_index,
+    shard_count,
+    output_dir,
+):
     """Prepare OpenAI Batch JSONL requests for response generation."""
     from src.config.generation import load_generation_config
     from src.pipeline.batch_responses import prepare_response_batch
@@ -852,6 +864,8 @@ def batch_prepare_responses(run_id, model, language, limit, n_candidates, max_re
                 limit=limit,
                 n_candidates=n_candidates,
                 max_requests=max_requests,
+                shard_index=shard_index,
+                shard_count=shard_count,
             )
             job_id = job.id
             request_count = job.request_count
@@ -932,6 +946,264 @@ def batch_sync(batch_job_id):
 # filter
 # ---------------------------------------------------------------------------
 
+
+def _print_language_id_config(language: str | None, output_format: str, audit: bool):
+    import json
+
+    import yaml
+
+    from src.config.language_id import audit_language_id_config, load_language_id_config
+
+    config = load_language_id_config()
+    entries = list(config.languages.values())
+    if language:
+        language_key = language.strip().lower()
+        entries = [entry for entry in entries if entry.name == language_key]
+        if not entries:
+            raise click.ClickException(f"No language-id config found for {language}")
+
+    payload = {
+        "path": str(config.path),
+        "glotlid": {
+            "enabled": config.glotlid.enabled,
+            "model_path": config.glotlid.resolved_model_path,
+            "top_k": config.glotlid.top_k,
+            "fallback_to_legacy": config.glotlid.fallback_to_legacy,
+            "fail_on_missing_model": config.glotlid.fail_on_missing_model,
+        },
+        "thresholds": {
+            "default": config.thresholds.default,
+            "short_text": config.thresholds.short_text,
+            "short_text_tokens": config.thresholds.short_text_tokens,
+            "contaminant_warning": config.thresholds.contaminant_warning,
+            "code_switch_margin": config.thresholds.code_switch_margin,
+            "related_label_multiplier": config.thresholds.related_label_multiplier,
+            "mismatch_multiplier": config.thresholds.mismatch_multiplier,
+        },
+        "languages": [
+            {
+                "name": entry.name,
+                "threshold": entry.threshold or config.thresholds.default,
+                "short_text_threshold": entry.short_text_threshold or config.thresholds.short_text,
+                "accepted_labels": sorted(entry.accepted_label_set),
+                "related_labels": list(entry.related_labels),
+                "contaminant_labels": list(entry.contaminant_labels),
+                "review_required": entry.review_required,
+                "notes": entry.notes,
+            }
+            for entry in entries
+        ],
+    }
+    if audit:
+        payload["audit"] = audit_language_id_config(config)
+
+    if output_format == "json":
+        click.echo(json.dumps(payload, indent=2, sort_keys=True))
+        return
+    if output_format == "yaml":
+        click.echo(yaml.safe_dump(payload, sort_keys=False, allow_unicode=True))
+        return
+
+    from rich.console import Console
+    from rich.table import Table
+
+    console = Console()
+    console.print(f"[bold]Language ID config:[/bold] {config.path}")
+    console.print(
+        "GlotLID "
+        f"enabled={config.glotlid.enabled} "
+        f"model={config.glotlid.resolved_model_path or '(not set)'} "
+        f"top_k={config.glotlid.top_k} "
+        f"fallback_to_legacy={config.glotlid.fallback_to_legacy}"
+    )
+
+    table = Table(show_lines=False)
+    table.add_column("Language")
+    table.add_column("Threshold")
+    table.add_column("Short")
+    table.add_column("Accepted Labels")
+    table.add_column("Related")
+    table.add_column("Review")
+    table.add_column("Notes")
+    for entry in entries:
+        table.add_row(
+            entry.name,
+            f"{entry.threshold or config.thresholds.default:.2f}",
+            f"{entry.short_text_threshold or config.thresholds.short_text:.2f}",
+            ", ".join(sorted(entry.accepted_label_set)),
+            ", ".join(entry.related_labels) or "-",
+            "yes" if entry.review_required else "no",
+            entry.notes or "",
+        )
+    console.print(table)
+
+    if audit:
+        audit_result = audit_language_id_config(config)
+        console.print("[bold]Audit[/bold]")
+        for key, values in audit_result.items():
+            console.print(f"{key}: {', '.join(values) if values else 'OK'}")
+
+
+@cli.command("language-id-config")
+@click.option("--language", "-l", default=None, help="Show one language only")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml"]),
+    default="table",
+    help="Output format",
+)
+@click.option("--audit", is_flag=True, help="Show config coverage issues")
+def language_id_config_command(language, output_format, audit):
+    """Visualize editable GlotLID thresholds and label mappings."""
+    _print_language_id_config(language, output_format, audit)
+
+
+@cli.command("lid-config")
+@click.option("--language", "-l", default=None, help="Show one language only")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml"]),
+    default="table",
+    help="Output format",
+)
+@click.option("--audit", is_flag=True, help="Show config coverage issues")
+def lid_config_command(language, output_format, audit):
+    """Alias for language-id-config."""
+    _print_language_id_config(language, output_format, audit)
+
+
+@cli.command("lid-check")
+@click.option("--run-id", default=None, help="Sample candidates from this run only")
+@click.option("--language", "-l", default=None, help="Sample candidates for this language only")
+@click.option("--status", default=None, help="Sample candidates with this status only, e.g. raw")
+@click.option("--limit", default=20, show_default=True, type=int, help="Number of candidates to test")
+@click.option("--text-chars", default=120, show_default=True, type=int, help="Preview characters per row")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format",
+)
+def lid_check(run_id, language, status, limit, text_chars, output_format):
+    """Run only GlotLID on a read-only sample of database candidates."""
+    import json
+    from textwrap import shorten
+
+    from rich.console import Console
+    from rich.table import Table
+
+    from src.filtering.language_detector import LanguageDetector
+    from src.storage.db import CandidateResponseORM, SessionLocal
+
+    detector = LanguageDetector(llm_router=None)
+    if not detector.glotlid_available:
+        raise click.ClickException(
+            "GlotLID is not available. "
+            f"{detector.glotlid_error or 'Set GLOTLID_MODEL_PATH to the local model.bin file.'}"
+        )
+
+    with SessionLocal() as session:
+        query = session.query(CandidateResponseORM).filter(
+            CandidateResponseORM.response_text.isnot(None)
+        )
+        if run_id:
+            query = query.filter(CandidateResponseORM.run_id == run_id)
+        if language:
+            query = query.filter(CandidateResponseORM.language == language)
+        if status:
+            query = query.filter(CandidateResponseORM.status == status)
+
+        rows = (
+            query.order_by(CandidateResponseORM.created_at.desc())
+            .limit(max(1, limit))
+            .all()
+        )
+
+    records = []
+    passed = 0
+    for row in rows:
+        result = detector.detect_glotlid_only(row.response_text, row.language)
+        threshold = detector.glotlid_threshold_for(row.response_text, row.language)
+        ok = result.confidence >= threshold
+        if ok:
+            passed += 1
+        predictions = result.details.get("predictions", [])
+        records.append(
+            {
+                "id": row.id,
+                "run_id": row.run_id,
+                "language": row.language,
+                "status": row.status,
+                "ok": ok,
+                "detected": result.detected,
+                "confidence": result.confidence,
+                "threshold": threshold,
+                "method": result.method,
+                "top_predictions": predictions[:3],
+                "error": result.details.get("error"),
+                "text": row.response_text,
+            }
+        )
+
+    if output_format == "json":
+        click.echo(
+            json.dumps(
+                {
+                    "count": len(records),
+                    "passed": passed,
+                    "failed": len(records) - passed,
+                    "records": records,
+                },
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
+        return
+
+    console = Console()
+    if not records:
+        console.print("[yellow]No matching candidates found.[/yellow]")
+        return
+
+    table = Table(show_lines=False)
+    table.add_column("Language")
+    table.add_column("OK")
+    table.add_column("Detected")
+    table.add_column("Conf")
+    table.add_column("Threshold")
+    table.add_column("Top Predictions")
+    table.add_column("Error")
+    table.add_column("Status")
+    table.add_column("Text")
+
+    for record in records:
+        top_predictions = ", ".join(
+            f"{label}:{prob:.2f}" for label, prob in record["top_predictions"]
+        )
+        preview = shorten(record["text"].replace("\n", " "), width=max(20, text_chars))
+        table.add_row(
+            record["language"],
+            "yes" if record["ok"] else "no",
+            record["detected"],
+            f"{record['confidence']:.3f}",
+            f"{record['threshold']:.2f}",
+            top_predictions or "-",
+            str(record["error"] or ""),
+            record["status"],
+            preview,
+        )
+
+    console.print(table)
+    console.print(
+        f"[bold]GlotLID-only sample:[/bold] {len(records)} candidates | "
+        f"[bold]passed:[/bold] {passed} | "
+        f"[bold]failed:[/bold] {len(records) - passed}"
+    )
+
+
 @cli.command("filter")
 @click.option("--language", "-l", default=None, help="Filter candidates for this language only")
 @click.option("--run-id", default=None, help="Filter only candidates from this run")
@@ -954,11 +1226,9 @@ def filter_candidates(language, run_id, retry_language_fail):
     sim_threshold = filtering_config.similarity_threshold
     min_quality = filtering_config.min_quality_score
 
-    # BUG FIX: LanguageDetector was constructed without a router, so the
-    # LLM fallback tier for low-resource languages (Yao, Sepedi, Northern
-    # Sotho) was silently disabled. We now pass a ModelRouter so the
-    # three-tier cascade (langdetect → langid → LLM) actually fires.
-    router = ModelRouter()
+    # LLM fallback is opt-in because the normal filtering path should be local
+    # and should not spend API credits.
+    router = ModelRouter() if filtering_config.language_detection.llm_fallback_enabled else None
     lang_detector = LanguageDetector(llm_router=router, config=filtering_config)
 
     quality_scorer = QualityScorer()
@@ -1001,7 +1271,17 @@ def filter_candidates(language, run_id, retry_language_fail):
                 c.language_score = det_result.confidence
                 if not ok:
                     c.status = "filtered_language"
-                    c.filter_reason = f"Language mismatch: detected={det_result.detected} conf={det_result.confidence:.2f}"
+                    threshold = det_result.details.get("threshold")
+                    threshold_text = (
+                        f" threshold={threshold:.2f}" if isinstance(threshold, (int, float)) else ""
+                    )
+                    c.filter_reason = (
+                        "Language mismatch: "
+                        f"detected={det_result.detected} "
+                        f"conf={det_result.confidence:.2f} "
+                        f"method={det_result.method}"
+                        f"{threshold_text}"
+                    )[:200]
                     stats["language_fail"] += 1
                 else:
                     lang_passed.append(c)

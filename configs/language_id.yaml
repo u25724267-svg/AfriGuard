@@ -1,0 +1,418 @@
+version: "1.0.0"
+description: >
+  Language-identification policy for AfriGuard filtering. This file is meant
+  to be edited during calibration: reviewers can tune thresholds, accepted
+  GlotLID labels, contaminant labels, and review flags without touching code.
+
+glotlid:
+  enabled: true
+  # Set either this value or the GLOTLID_MODEL_PATH environment variable.
+  # Example: data/models/glotlid/model.bin
+  model_path: null
+  model_env_var: "GLOTLID_MODEL_PATH"
+  top_k: 5
+  fallback_to_legacy: true
+  fail_on_missing_model: false
+
+thresholds:
+  # Default confidence required when the top GlotLID label is accepted.
+  default: 0.60
+  # Short texts are less reliable, so they can require a stricter threshold.
+  short_text: 0.72
+  short_text_tokens: 20
+  # If a contaminant language appears with at least this probability, the
+  # detector records it as a contamination warning in the result details.
+  contaminant_warning: 0.35
+  # If the best accepted label is ahead of a contaminant by less than this
+  # margin, the result is treated as code-switch/contamination suspect.
+  code_switch_margin: 0.20
+  # Related labels are not first-choice labels but may be valid dialect/script
+  # neighbors. Their confidence is discounted unless promoted to accepted.
+  related_label_multiplier: 0.65
+  mismatch_multiplier: 0.10
+
+text:
+  min_chars: 10
+  min_tokens_for_confident_auto_pass: 20
+  short_text_policy: "raise_threshold"
+
+contaminants:
+  global:
+    - eng_Latn
+    - fra_Latn
+    - por_Latn
+    - arb_Arab
+    - ara_Arab
+    - ary_Arab
+    - arz_Arab
+    - afr_Latn
+
+languages:
+  - name: swahili
+    glotlid_labels: [swh_Latn, swa_Latn]
+    accepted_labels: [swh_Latn, swa_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, ara_Arab, arb_Arab]
+    threshold: 0.62
+    review_required: false
+    notes: "Accept individual Swahili plus macrolanguage label if present."
+
+  - name: hausa
+    glotlid_labels: [hau_Latn]
+    accepted_labels: [hau_Latn]
+    related_labels: [hau_Arab]
+    contaminant_labels: [eng_Latn, ara_Arab, arb_Arab]
+    threshold: 0.62
+    review_required: false
+    notes: "Ajami is related, but Latin is the expected project script."
+
+  - name: yoruba
+    glotlid_labels: [yor_Latn]
+    accepted_labels: [yor_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, fra_Latn]
+    threshold: 0.62
+    review_required: false
+    notes: ""
+
+  - name: igbo
+    glotlid_labels: [ibo_Latn, igbo_Latn]
+    accepted_labels: [ibo_Latn, igbo_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn]
+    threshold: 0.60
+    review_required: true
+    notes: "Keep both likely ISO-derived label spellings until confirmed."
+
+  - name: amharic
+    glotlid_labels: [amh_Ethi]
+    accepted_labels: [amh_Ethi]
+    related_labels: []
+    contaminant_labels: [eng_Latn, ara_Arab, arb_Arab]
+    threshold: 0.60
+    review_required: true
+    notes: "Expected script is Ethiopic."
+
+  - name: oromo
+    glotlid_labels: [orm_Latn]
+    accepted_labels: [orm_Latn]
+    related_labels: [gaz_Latn, gax_Latn]
+    contaminant_labels: [eng_Latn, amh_Ethi, ara_Arab, arb_Arab]
+    threshold: 0.58
+    review_required: true
+    notes: "Related Oromo varieties may need promotion after calibration."
+
+  - name: somali
+    glotlid_labels: [som_Latn]
+    accepted_labels: [som_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, ara_Arab, arb_Arab]
+    threshold: 0.60
+    review_required: true
+    notes: ""
+
+  - name: shona
+    glotlid_labels: [sna_Latn]
+    accepted_labels: [sna_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: kinyarwanda
+    glotlid_labels: [kin_Latn]
+    accepted_labels: [kin_Latn]
+    related_labels: [run_Latn]
+    contaminant_labels: [eng_Latn, fra_Latn]
+    threshold: 0.60
+    review_required: true
+    notes: "Kirundi is related but should not automatically pass."
+
+  - name: tigrinya
+    glotlid_labels: [tir_Ethi]
+    accepted_labels: [tir_Ethi]
+    related_labels: []
+    contaminant_labels: [eng_Latn, amh_Ethi, ara_Arab, arb_Arab]
+    threshold: 0.60
+    review_required: true
+    notes: "Expected script is Ethiopic."
+
+  - name: zulu
+    glotlid_labels: [zul_Latn]
+    accepted_labels: [zul_Latn]
+    related_labels: [xho_Latn]
+    contaminant_labels: [eng_Latn, afr_Latn]
+    threshold: 0.60
+    review_required: true
+    notes: "Xhosa is related but should not automatically pass."
+
+  - name: xhosa
+    glotlid_labels: [xho_Latn]
+    accepted_labels: [xho_Latn]
+    related_labels: [zul_Latn]
+    contaminant_labels: [eng_Latn, afr_Latn]
+    threshold: 0.60
+    review_required: true
+    notes: "Zulu is related but should not automatically pass."
+
+  - name: nigerian_pidgin
+    glotlid_labels: [pcm_Latn]
+    accepted_labels: [pcm_Latn]
+    related_labels: [eng_Latn]
+    contaminant_labels: [eng_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: "English overlap is expected; tune carefully with human labels."
+
+  - name: akan_twi
+    glotlid_labels: [aka_Latn, twi_Latn]
+    accepted_labels: [aka_Latn, twi_Latn]
+    related_labels: [fat_Latn]
+    contaminant_labels: [eng_Latn, fra_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: "Fante is related; promote only if team decides Akan includes it."
+
+  - name: lingala
+    glotlid_labels: [lin_Latn]
+    accepted_labels: [lin_Latn]
+    related_labels: []
+    contaminant_labels: [fra_Latn, eng_Latn]
+    threshold: 0.60
+    review_required: true
+    notes: ""
+
+  - name: luganda
+    glotlid_labels: [lug_Latn]
+    accepted_labels: [lug_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, swa_Latn, swh_Latn]
+    threshold: 0.60
+    review_required: true
+    notes: ""
+
+  - name: kirundi
+    glotlid_labels: [run_Latn]
+    accepted_labels: [run_Latn]
+    related_labels: [kin_Latn]
+    contaminant_labels: [fra_Latn, eng_Latn, swa_Latn, swh_Latn]
+    threshold: 0.60
+    review_required: true
+    notes: "Kinyarwanda is related but should not automatically pass."
+
+  - name: bambara
+    glotlid_labels: [bam_Latn]
+    accepted_labels: [bam_Latn]
+    related_labels: []
+    contaminant_labels: [fra_Latn, eng_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: wolof
+    glotlid_labels: [wol_Latn]
+    accepted_labels: [wol_Latn]
+    related_labels: []
+    contaminant_labels: [fra_Latn, eng_Latn, ara_Arab, arb_Arab]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: fulfulde
+    glotlid_labels: [ful_Latn]
+    accepted_labels: [ful_Latn]
+    related_labels: [fuv_Latn, ffm_Latn, fuc_Latn, fuf_Latn]
+    contaminant_labels: [fra_Latn, eng_Latn, ara_Arab, arb_Arab]
+    threshold: 0.56
+    review_required: true
+    notes: "Fulfulde varieties need reviewer calibration before full auto-pass."
+
+  - name: moore
+    glotlid_labels: [mos_Latn]
+    accepted_labels: [mos_Latn]
+    related_labels: []
+    contaminant_labels: [fra_Latn, eng_Latn]
+    threshold: 0.56
+    review_required: true
+    notes: ""
+
+  - name: ewe
+    glotlid_labels: [ewe_Latn]
+    accepted_labels: [ewe_Latn]
+    related_labels: []
+    contaminant_labels: [fra_Latn, eng_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: kikuyu
+    glotlid_labels: [kik_Latn]
+    accepted_labels: [kik_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, swa_Latn, swh_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: dholuo
+    glotlid_labels: [luo_Latn]
+    accepted_labels: [luo_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, swa_Latn, swh_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: chichewa
+    glotlid_labels: [nya_Latn]
+    accepted_labels: [nya_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn]
+    threshold: 0.60
+    review_required: false
+    notes: "GlotLID may use Nyanja ISO code."
+
+  - name: bemba
+    glotlid_labels: [bem_Latn]
+    accepted_labels: [bem_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: sesotho
+    glotlid_labels: [sot_Latn]
+    accepted_labels: [sot_Latn]
+    related_labels: [nso_Latn]
+    contaminant_labels: [eng_Latn, afr_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: "Northern Sotho/Sepedi is related but separate in this project."
+
+  - name: setswana
+    glotlid_labels: [tsn_Latn]
+    accepted_labels: [tsn_Latn]
+    related_labels: [sot_Latn, nso_Latn]
+    contaminant_labels: [eng_Latn, afr_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: sepedi
+    glotlid_labels: [nso_Latn]
+    accepted_labels: [nso_Latn]
+    related_labels: [sot_Latn, tsn_Latn]
+    contaminant_labels: [eng_Latn, afr_Latn]
+    threshold: 0.56
+    review_required: true
+    notes: "Also known as Northern Sotho/Sesotho sa Leboa."
+
+  - name: northern_sotho
+    glotlid_labels: [nso_Latn]
+    accepted_labels: [nso_Latn]
+    related_labels: [sot_Latn, tsn_Latn]
+    contaminant_labels: [eng_Latn, afr_Latn]
+    threshold: 0.56
+    review_required: true
+    notes: "Compatibility entry; target v1 uses sepedi."
+
+  - name: xitsonga
+    glotlid_labels: [tso_Latn]
+    accepted_labels: [tso_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, afr_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: tshivenda
+    glotlid_labels: [ven_Latn]
+    accepted_labels: [ven_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, afr_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: ""
+
+  - name: malagasy
+    glotlid_labels: [mlg_Latn, plt_Latn]
+    accepted_labels: [mlg_Latn, plt_Latn]
+    related_labels: []
+    contaminant_labels: [fra_Latn, eng_Latn]
+    threshold: 0.58
+    review_required: true
+    notes: "Accept macrolanguage and Plateau Malagasy labels until calibrated."
+
+  - name: kikongo
+    glotlid_labels: [kon_Latn]
+    accepted_labels: [kon_Latn]
+    related_labels: [kng_Latn]
+    contaminant_labels: [fra_Latn, por_Latn, eng_Latn]
+    threshold: 0.56
+    review_required: true
+    notes: ""
+
+  - name: tshiluba
+    glotlid_labels: [lua_Latn]
+    accepted_labels: [lua_Latn]
+    related_labels: []
+    contaminant_labels: [fra_Latn, eng_Latn]
+    threshold: 0.56
+    review_required: true
+    notes: ""
+
+  - name: dinka
+    glotlid_labels: [din_Latn]
+    accepted_labels: [din_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, ara_Arab, arb_Arab]
+    threshold: 0.56
+    review_required: true
+    notes: ""
+
+  - name: kanuri
+    glotlid_labels: [kau_Latn]
+    accepted_labels: [kau_Latn]
+    related_labels: [knc_Latn]
+    contaminant_labels: [eng_Latn, ara_Arab, arb_Arab]
+    threshold: 0.56
+    review_required: true
+    notes: "Kanuri varieties need reviewer calibration."
+
+  - name: tiv
+    glotlid_labels: [tiv_Latn]
+    accepted_labels: [tiv_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn]
+    threshold: 0.56
+    review_required: true
+    notes: ""
+
+  - name: ibibio_efik
+    glotlid_labels: [ibb_Latn, efi_Latn]
+    accepted_labels: [ibb_Latn, efi_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn]
+    threshold: 0.56
+    review_required: true
+    notes: "Project grouping intentionally accepts Ibibio and Efik labels."
+
+  - name: mandinka
+    glotlid_labels: [mnk_Latn]
+    accepted_labels: [mnk_Latn]
+    related_labels: [man_Latn]
+    contaminant_labels: [fra_Latn, eng_Latn, ara_Arab, arb_Arab]
+    threshold: 0.56
+    review_required: true
+    notes: ""
+
+  - name: yao
+    glotlid_labels: [yao_Latn]
+    accepted_labels: [yao_Latn]
+    related_labels: []
+    contaminant_labels: [eng_Latn, swa_Latn, swh_Latn]
+    threshold: 0.54
+    review_required: true
+    notes: "Low-resource; keep human review until calibrated."
